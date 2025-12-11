@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/static/css/main.75440cbf.css",
+    "main.js": "/static/js/main.be3c938b.js",
+    "static/js/977.4aee1cf4.chunk.js": "/static/js/977.4aee1cf4.chunk.js",
+    "static/js/667.fc74f247.chunk.js": "/static/js/667.fc74f247.chunk.js",
+    "static/media/menueBack.jpg": "/static/media/menueBack.dddc447e3ecc8063d08c.jpg",
+    "static/media/loginBack.jpg": "/static/media/loginBack.28c9d29b12e0cb590bd5.jpg",
+    "static/media/pts.png": "/static/media/pts.9e884c4fc691bd605aec.png",
+    "static/media/forgotpw.jpg": "/static/media/forgotpw.75e3fc0eb3eea0cf7576.jpg",
+    "static/media/apple-touch-icon.png": "/static/media/apple-touch-icon.efaae5d6043ab8367fb2.png",
+    "static/media/logpts.png": "/static/media/logpts.84ca23aa071ba33c943e.png",
+    "index.html": "/index.html",
+    "main.75440cbf.css.map": "/static/css/main.75440cbf.css.map",
+    "main.be3c938b.js.map": "/static/js/main.be3c938b.js.map",
+    "977.4aee1cf4.chunk.js.map": "/static/js/977.4aee1cf4.chunk.js.map",
+    "667.fc74f247.chunk.js.map": "/static/js/667.fc74f247.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.75440cbf.css",
+    "static/js/main.be3c938b.js"
+  ]
+}
