@@ -15,6 +15,8 @@ db.RegistrationDetail = require('./registrationDetail')(sequelize, Sequelize.Dat
 db.Document = require('./document')(sequelize, Sequelize.DataTypes);
 db.Leave = require('./leave')(sequelize, Sequelize.DataTypes);
 db.Attendance = require('./attendance')(sequelize, Sequelize.DataTypes);  
+db.Task = require('./task')(sequelize, Sequelize.DataTypes);
+db.TaskHistory = require('./taskHistory')(sequelize, Sequelize.DataTypes);
 
 // Setup associations
 Object.values(db).forEach(model => {

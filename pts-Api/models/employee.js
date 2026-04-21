@@ -69,15 +69,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     passportPhoto: {
-      type: DataTypes.TEXT, // Base64 encoded image
+      type: DataTypes.TEXT('long'), // Base64 encoded image
       allowNull: true
     },
     employmentContract: {
-      type: DataTypes.TEXT, // Base64 encoded PDF
+      type: DataTypes.TEXT('long'), // Base64 encoded PDF
       allowNull: true
     },
     rightToWorkDocument: {
-      type: DataTypes.TEXT, // Base64 encoded document
+      type: DataTypes.TEXT('long'), // Base64 encoded document
       allowNull: true
     },
     status: {

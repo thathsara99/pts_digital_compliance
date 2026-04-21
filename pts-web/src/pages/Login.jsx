@@ -67,15 +67,27 @@ const LoginPage = ({ onLoginSuccess }) => {
 };
 
   return (
-    <Layout
-      style={{
-        minHeight: '100vh',
-        backgroundImage: `url(${back})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes loginFadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes loginBgZoom {
+          from { transform: scale(1); }
+          to { transform: scale(1.03); }
+        }
+      `}</style>
+      <Layout
+        style={{
+          minHeight: '100vh',
+          backgroundImage: `url(${back})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          animation: 'loginBgZoom 14s ease-in-out infinite alternate'
+        }}
+      >
       <Row style={{ minHeight: '80vh' }} justify="start" align="middle">
         <Col xs={24} sm={24} md={24} lg={24} xl={24} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
           <Card
@@ -84,8 +96,11 @@ const LoginPage = ({ onLoginSuccess }) => {
               maxWidth: '600px',
               minHeight: 'auto',
               margin: '40px 0 0 40px',
- 
+              animation: 'loginFadeIn 0.6s ease-out',
+              transition: 'transform 0.25s ease, box-shadow 0.25s ease'
             }}
+            bodyStyle={{ transition: 'transform 0.25s ease' }}
+            hoverable
           >
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <img
@@ -154,7 +169,8 @@ const LoginPage = ({ onLoginSuccess }) => {
           </Card>
         </Col>
       </Row>
-    </Layout>
+      </Layout>
+    </>
   );
 };
 

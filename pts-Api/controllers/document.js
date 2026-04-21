@@ -1,12 +1,19 @@
 const { Document, User } = require('../models');
 const { Op } = require('sequelize');
 
+const PRIVILEGED_ROLES = new Set(['HR Manager', 'Super Admin', 'HR', 'System Admin']);
+const isPrivilegedRole = (role) => PRIVILEGED_ROLES.has(role);
+
 // Upload document for existing employee
 const uploadEmployeeDocument = async (req, res) => {
   try {
-    const { fileName, documentType, fileData, fileType, fileSize, userId } = req.body;
+    const { fileName, documentType, fileData, fileType, fileSize } = req.body;
+    const requesterRole = req.user?.role;
+    const requesterUserId = req.user?.id;
+    const requestedUserId = req.body.userId;
+    const resolvedUserId = isPrivilegedRole(requesterRole) ? requestedUserId : requesterUserId;
 
-    if (!fileName || !documentType || !fileData || !fileType || !fileSize || !userId) {
+    if (!fileName || !documentType || !fileData || !fileType || !fileSize || !resolvedUserId) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -19,7 +26,7 @@ const uploadEmployeeDocument = async (req, res) => {
     console.log('Upload - Base64 preview:', fileData ? fileData.substring(0, 100) + '...' : 'null');
 
     // Check if user exists
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(resolvedUserId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -33,7 +40,7 @@ const uploadEmployeeDocument = async (req, res) => {
       fileData,
       fileType,
       fileSize,
-      userId,
+      userId: resolvedUserId,
       status: 'Active'
     });
 
@@ -106,6 +113,8 @@ const uploadApplicantDocument = async (req, res) => {
 const getEmployeeDocuments = async (req, res) => {
   try {
     const { documentType, userId } = req.query;
+    const requesterRole = req.user?.role;
+    const requesterUserId = req.user?.id;
     const whereClause = {
       status: 'Active',
       userId: { [Op.ne]: null }
@@ -115,8 +124,12 @@ const getEmployeeDocuments = async (req, res) => {
       whereClause.documentType = documentType;
     }
 
-    if (userId) {
+    if (userId && isPrivilegedRole(requesterRole)) {
       whereClause.userId = userId;
+    }
+
+    if (!isPrivilegedRole(requesterRole)) {
+      whereClause.userId = requesterUserId;
     }
 
     const documents = await Document.findAll({
@@ -158,6 +171,13 @@ const getEmployeeDocuments = async (req, res) => {
 // Get all applicant documents
 const getApplicantDocuments = async (req, res) => {
   try {
+    if (!isPrivilegedRole(req.user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
     const { documentType, applicantName } = req.query;
     const whereClause = {
       status: 'Active',
@@ -229,6 +249,13 @@ const getDocumentById = async (req, res) => {
       });
     }
 
+    if (!isPrivilegedRole(req.user?.role) && document.userId !== req.user?.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
     // Debug: Check if fileData is complete
     console.log('Document ID:', document.id);
     console.log('File size:', document.fileSize);
@@ -295,6 +322,13 @@ const deleteDocument = async (req, res) => {
       });
     }
 
+    if (!isPrivilegedRole(req.user?.role) && document.userId !== req.user?.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
     // Soft delete by updating status
     await document.update({ status: 'Deleted' });
 
@@ -315,6 +349,21 @@ const deleteDocument = async (req, res) => {
 // Get available users for dropdown
 const getAvailableUsers = async (req, res) => {
   try {
+    if (!isPrivilegedRole(req.user?.role)) {
+      const selfUser = await User.findByPk(req.user?.id, {
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      });
+
+      const data = selfUser
+        ? [{ label: selfUser.email, value: selfUser.id, name: `${selfUser.firstName} ${selfUser.lastName}` }]
+        : [];
+
+      return res.json({
+        success: true,
+        data
+      });
+    }
+
     const users = await User.findAll({
       where: {
         status: true

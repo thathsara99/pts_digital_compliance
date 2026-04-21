@@ -2,6 +2,9 @@ const { Leave, User } = require('../models');
 const { Op } = require('sequelize');
 const dayjs = require('dayjs');
 
+const PRIVILEGED_ROLES = new Set(['HR Manager', 'Super Admin', 'System Admin']);
+const canViewAllLeaveData = (role) => PRIVILEGED_ROLES.has(role);
+
 // Apply for leave
 const applyLeave = async (req, res) => {
   try {
@@ -96,11 +99,11 @@ const getLeaves = async (req, res) => {
       }
     ];
 
-    // If not System Admin, only show user's own leaves
-    if (currentUser.role !== 'System Admin') {
+    // Non-privileged roles can only see their own leaves
+    if (!canViewAllLeaveData(currentUser.role)) {
       whereClause.userId = currentUser.id;
     } else if (userId) {
-      // Admin can filter by specific user
+      // Privileged role can filter by specific user
       whereClause.userId = userId;
     }
 
@@ -193,7 +196,7 @@ const getLeaveById = async (req, res) => {
     }
 
     // Check if user has permission to view this leave
-    if (currentUser.role !== 'System Admin' && leave.userId !== currentUser.id) {
+    if (!canViewAllLeaveData(currentUser.role) && leave.userId !== currentUser.id) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view this leave'
@@ -229,17 +232,17 @@ const getLeaveById = async (req, res) => {
   }
 };
 
-// Approve leave (System Admin only)
+// Approve leave (HR Manager / Super Admin only)
 const approveLeave = async (req, res) => {
   try {
     const { id } = req.params;
     const currentUser = req.user;
 
-    // Check if user is System Admin
-    if (currentUser.role !== 'System Admin') {
+    // Check if user is privileged
+    if (!canViewAllLeaveData(currentUser.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Only System Admin can approve/reject leaves'
+        message: 'Only HR Manager or Super Admin can approve/reject leaves'
       });
     }
 
@@ -285,18 +288,18 @@ const approveLeave = async (req, res) => {
   }
 };
 
-// Reject leave (System Admin only)
+// Reject leave (HR Manager / Super Admin only)
 const rejectLeave = async (req, res) => {
   try {
     const { id } = req.params;
     const { rejectionReason } = req.body;
     const currentUser = req.user;
 
-    // Check if user is System Admin
-    if (currentUser.role !== 'System Admin') {
+    // Check if user is privileged
+    if (!canViewAllLeaveData(currentUser.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Only System Admin can approve/reject leaves'
+        message: 'Only HR Manager or Super Admin can approve/reject leaves'
       });
     }
 
@@ -367,7 +370,7 @@ const updateLeave = async (req, res) => {
     }
 
     // Check if user can update this leave
-    if (currentUser.role !== 'System Admin' && leave.userId !== currentUser.id) {
+    if (!canViewAllLeaveData(currentUser.role) && leave.userId !== currentUser.id) {
       return res.status(403).json({
         success: false,
         message: 'You can only update your own leaves'
@@ -461,7 +464,7 @@ const deleteLeave = async (req, res) => {
     }
 
     // Check if user can delete this leave
-    if (currentUser.role !== 'System Admin' && leave.userId !== currentUser.id) {
+    if (!canViewAllLeaveData(currentUser.role) && leave.userId !== currentUser.id) {
       return res.status(403).json({
         success: false,
         message: 'You can only delete your own leaves'
@@ -497,8 +500,8 @@ const getLeaveStatistics = async (req, res) => {
     const currentUser = req.user;
     let whereClause = {};
 
-    // If not System Admin, only show user's own statistics
-    if (currentUser.role !== 'System Admin') {
+    // Non-privileged roles see only their own statistics
+    if (!canViewAllLeaveData(currentUser.role)) {
       whereClause.userId = currentUser.id;
     }
 

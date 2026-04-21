@@ -13,13 +13,14 @@ import {
   FolderAddFilled,
   IdcardOutlined,
   ClockCircleOutlined,
+  CheckSquareOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { ConfigProvider, theme } from "antd";
 import logo from "../assets/logpts.png";
 import profile from "../assets/apple-touch-icon.png";
 import ptsLogo from "../assets/pts.png";
-import { isTokenValid, clearAuthToken, getTimeUntilExpiry, formatTimeRemaining } from "../utils/auth";
+import { isTokenValid, clearAuthToken, getTimeUntilExpiry, formatTimeRemaining, getCurrentUserRole } from "../utils/auth";
 
 const { Header, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -41,6 +42,8 @@ const MainLayout = ({ children, onLogout }) => {
   const navigate = useNavigate();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const currentRole = getCurrentUserRole();
+  const canManageUsersAndDepartments = ['HR Manager', 'Super Admin', 'System Admin'].includes(currentRole);
 
   // Function to fetch user profile data
   const fetchUserProfile = async () => {
@@ -172,16 +175,16 @@ const MainLayout = ({ children, onLogout }) => {
       label: <Link to="/home" onClick={() => setDrawerVisible(false)}>Dashboard</Link>,
       icon: <HomeOutlined />
     },
-    {
+    ...(canManageUsersAndDepartments ? [{
       key: "2",
       label: <Link to="/department" onClick={() => setDrawerVisible(false)}>Department</Link>,
       icon: <TeamOutlined />
-    },
-    {
+    }] : []),
+    ...(canManageUsersAndDepartments ? [{
       key: "3",
       label: <Link to="/users" onClick={() => setDrawerVisible(false)}>Users</Link>,
       icon: <UserOutlined />
-    },
+    }] : []),
     {
       key: "4",
       label: <Link to="/employee" onClick={() => setDrawerVisible(false)}>Employee Management</Link>,
@@ -201,6 +204,11 @@ const MainLayout = ({ children, onLogout }) => {
       key: "7",
       label: <Link to="/attendance" onClick={() => setDrawerVisible(false)}>Attendance</Link>,
       icon: <ClockCircleOutlined />
+    },
+    {
+      key: "8",
+      label: <Link to="/tasks" onClick={() => setDrawerVisible(false)}>Task Manager</Link>,
+      icon: <CheckSquareOutlined />
     },
   ];
 

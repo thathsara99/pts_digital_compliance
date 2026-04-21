@@ -2,6 +2,9 @@ const { Attendance, User } = require('../models');
 const { Op } = require('sequelize');
 const dayjs = require('dayjs');
 
+const PRIVILEGED_ROLES = new Set(['HR Manager', 'Super Admin', 'System Admin']);
+const canViewAllAttendanceData = (role) => PRIVILEGED_ROLES.has(role);
+
 // Clock In
 const clockIn = async (req, res) => {
   try {
@@ -178,10 +181,16 @@ const getCurrentStatus = async (req, res) => {
 // Get attendance history
 const getAttendanceHistory = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { startDate, endDate, page = 1, limit = 10 } = req.query;
+    const requesterUserId = req.user.id;
+    const requesterRole = req.user.role;
+    const { startDate, endDate, page = 1, limit = 10, userId } = req.query;
 
-    const whereClause = { userId };
+    const whereClause = {};
+    if (!canViewAllAttendanceData(requesterRole)) {
+      whereClause.userId = requesterUserId;
+    } else if (userId) {
+      whereClause.userId = userId;
+    }
     
     if (startDate && endDate) {
       whereClause.workDate = {
@@ -228,11 +237,16 @@ const getAttendanceHistory = async (req, res) => {
 // Get attendance statistics
 const getAttendanceStatistics = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { startDate, endDate } = req.query;
+    const requesterUserId = req.user.id;
+    const requesterRole = req.user.role;
+    const { startDate, endDate, userId } = req.query;
     const currentDate = dayjs().format('YYYY-MM-DD');
 
-    const whereClause = { userId };
+    const whereClause = {};
+    const scopedUserId = !canViewAllAttendanceData(requesterRole) ? requesterUserId : (userId || null);
+    if (scopedUserId) {
+      whereClause.userId = scopedUserId;
+    }
     
     if (startDate && endDate) {
       whereClause.workDate = {
@@ -252,7 +266,7 @@ const getAttendanceStatistics = async (req, res) => {
     // Get today's attendance
     const todayAttendance = await Attendance.findOne({
       where: {
-        userId,
+        userId: scopedUserId || requesterUserId,
         workDate: currentDate
       }
     });
@@ -277,7 +291,7 @@ const getAttendanceStatistics = async (req, res) => {
     
     const weekAttendances = await Attendance.findAll({
       where: {
-        userId,
+        userId: scopedUserId || requesterUserId,
         workDate: {
           [Op.between]: [weekStart, weekEnd]
         }

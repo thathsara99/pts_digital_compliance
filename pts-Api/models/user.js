@@ -96,6 +96,23 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'approvedBy',
       as: 'approvedLeaves'
     });
+
+    // Tasks assigned to user
+    User.hasMany(models.Task, {
+      foreignKey: 'userId',
+      as: 'tasks'
+    });
+
+    // Tasks created by user
+    User.hasMany(models.Task, {
+      foreignKey: 'createdBy',
+      as: 'createdTasks'
+    });
+
+    User.hasMany(models.TaskHistory, {
+      foreignKey: 'changedBy',
+      as: 'taskChanges'
+    });
   };
 
   return User;

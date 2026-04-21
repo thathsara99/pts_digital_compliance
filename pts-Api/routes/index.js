@@ -11,6 +11,7 @@ const companyProfileController = require('../controllers/companyProfile');
 const documentController = require('../controllers/document');
 const leaveController = require('../controllers/leave');
 const attendanceController = require('../controllers/attendance');
+const taskController = require('../controllers/task');
 
 // Auth
 router.post('/login', authController.login);
@@ -82,5 +83,13 @@ router.post('/attendance/clock-out', authenticate, attendanceController.clockOut
 router.get('/attendance/status', authenticate, attendanceController.getCurrentStatus);
 router.get('/attendance/history', authenticate, attendanceController.getAttendanceHistory);
 router.get('/attendance/statistics', authenticate, attendanceController.getAttendanceStatistics);
+
+// Task routes
+router.get('/tasks', authenticate, taskController.getTasks);
+router.post('/tasks', authenticate, taskController.createTask);
+router.put('/tasks/:id', authenticate, taskController.updateTask);
+router.patch('/tasks/:id/status', authenticate, taskController.updateTaskStatus);
+router.delete('/tasks/:id', authenticate, taskController.deleteTask);
+router.get('/tasks/:id/history', authenticate, taskController.getTaskHistory);
 
 module.exports = router;

@@ -7,6 +7,7 @@ import {
   Tag,
   Button,
   DatePicker,
+  Select,
   Row,
   Col,
   Statistic,
@@ -23,9 +24,11 @@ import {
 } from '@ant-design/icons';
 import { apiClient } from '../config/api';
 import dayjs from 'dayjs';
+import { getCurrentUserRole } from '../utils/auth';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const AttendanceHistory = () => {
   const [attendances, setAttendances] = useState([]);
@@ -40,11 +43,19 @@ const AttendanceHistory = () => {
     pageSize: 10,
     total: 0
   });
+  const [employeeFilter, setEmployeeFilter] = useState(null);
+  const currentRole = getCurrentUserRole();
+  const canViewAllAttendanceData = ['HR Manager', 'Super Admin', 'System Admin'].includes(currentRole);
+  const employeeOptions = [...new Set(attendances
+    .map((a) => ({ id: a.userId, name: a.employee ? `${a.employee.firstName} ${a.employee.lastName}` : '' }))
+    .filter((a) => a.id && a.name)
+    .map((a) => JSON.stringify(a)))]
+    .map((s) => JSON.parse(s));
 
   useEffect(() => {
     fetchAttendanceHistory();
     fetchStatistics();
-  }, [pagination.current, pagination.pageSize, dateRange]);
+  }, [pagination.current, pagination.pageSize, dateRange, employeeFilter, canViewAllAttendanceData]);
 
   const fetchAttendanceHistory = async () => {
     try {
@@ -53,7 +64,8 @@ const AttendanceHistory = () => {
         page: pagination.current,
         limit: pagination.pageSize,
         startDate: dateRange[0]?.format('YYYY-MM-DD'),
-        endDate: dateRange[1]?.format('YYYY-MM-DD')
+        endDate: dateRange[1]?.format('YYYY-MM-DD'),
+        ...(canViewAllAttendanceData && employeeFilter ? { userId: employeeFilter } : {})
       };
 
       const response = await apiClient.get('/attendance/history', { params });
@@ -76,7 +88,8 @@ const AttendanceHistory = () => {
     try {
       const params = {
         startDate: dateRange[0]?.format('YYYY-MM-DD'),
-        endDate: dateRange[1]?.format('YYYY-MM-DD')
+        endDate: dateRange[1]?.format('YYYY-MM-DD'),
+        ...(canViewAllAttendanceData && employeeFilter ? { userId: employeeFilter } : {})
       };
 
       const response = await apiClient.get('/attendance/statistics', { params });
@@ -126,7 +139,8 @@ const AttendanceHistory = () => {
         page: 1,
         limit: 10000, // Large limit to get all records
         startDate: dateRange[0]?.format('YYYY-MM-DD'),
-        endDate: dateRange[1]?.format('YYYY-MM-DD')
+        endDate: dateRange[1]?.format('YYYY-MM-DD'),
+        ...(canViewAllAttendanceData && employeeFilter ? { userId: employeeFilter } : {})
       };
 
       const response = await apiClient.get('/attendance/history', { params });
@@ -141,7 +155,9 @@ const AttendanceHistory = () => {
       }
 
       // Prepare CSV headers
-      const headers = ['Date', 'Clock In', 'Clock Out', 'Total Hours', 'Status'];
+      const headers = canViewAllAttendanceData
+        ? ['Employee', 'Date', 'Clock In', 'Clock Out', 'Total Hours', 'Status']
+        : ['Date', 'Clock In', 'Clock Out', 'Total Hours', 'Status'];
       
       // Prepare CSV rows
       const csvRows = allAttendances.map(att => {
@@ -161,7 +177,10 @@ const AttendanceHistory = () => {
           return strValue;
         };
         
-        return [escapeCSV(date), escapeCSV(clockIn), escapeCSV(clockOut), escapeCSV(totalHours), escapeCSV(status)];
+        const employeeName = att.employee ? `${att.employee.firstName} ${att.employee.lastName}` : '-';
+        return canViewAllAttendanceData
+          ? [escapeCSV(employeeName), escapeCSV(date), escapeCSV(clockIn), escapeCSV(clockOut), escapeCSV(totalHours), escapeCSV(status)]
+          : [escapeCSV(date), escapeCSV(clockIn), escapeCSV(clockOut), escapeCSV(totalHours), escapeCSV(status)];
       });
 
       // Combine headers and rows (rows are already escaped)
@@ -193,6 +212,14 @@ const AttendanceHistory = () => {
   };
 
   const columns = [
+    ...(canViewAllAttendanceData ? [{
+      title: 'Employee',
+      dataIndex: ['employee', 'firstName'],
+      key: 'employee',
+      render: (_, record) => (
+        <Text strong>{record.employee ? `${record.employee.firstName} ${record.employee.lastName}` : '-'}</Text>
+      )
+    }] : []),
     {
       title: 'Date',
       dataIndex: 'workDate',
@@ -307,6 +334,27 @@ const AttendanceHistory = () => {
               />
             </Space>
           </Col>
+          {canViewAllAttendanceData && (
+            <Col xs={24} sm={12} md={8}>
+              <Space>
+                <Text strong>Employee:</Text>
+                <Select
+                  value={employeeFilter}
+                  allowClear
+                  placeholder="All Employees"
+                  style={{ minWidth: 180 }}
+                  onChange={(value) => {
+                    setEmployeeFilter(value);
+                    setPagination((prev) => ({ ...prev, current: 1 }));
+                  }}
+                >
+                  {employeeOptions.map((emp) => (
+                    <Option key={emp.id} value={emp.id}>{emp.name}</Option>
+                  ))}
+                </Select>
+              </Space>
+            </Col>
+          )}
           <Col xs={24} sm={12} md={8}>
             <Button 
               type="primary"

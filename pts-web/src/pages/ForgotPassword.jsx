@@ -80,22 +80,34 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        width: '100vw',
-        backgroundImage: `url(${background})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        padding: '20px 60px',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes forgotFadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes forgotBgFloat {
+          from { transform: scale(1); }
+          to { transform: scale(1.03); }
+        }
+      `}</style>
+      <div
+        style={{
+          height: '100vh',
+          width: '100vw',
+          backgroundImage: `url(${background})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          padding: '20px 60px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          animation: 'forgotBgFloat 14s ease-in-out infinite alternate'
+        }}
+      >
       <Card
         style={{
           width: '100%',
@@ -104,9 +116,12 @@ const ResetPasswordPage = () => {
           boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
           border: 'none',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
+          animation: 'forgotFadeIn 0.6s ease-out',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease'
         }}
         bodyStyle={{ padding: '40px' }}
+        hoverable
       >
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <img
@@ -202,6 +217,7 @@ const ResetPasswordPage = () => {
             </Button>
           </Card>
         </div>
+    </>
   );
 };
 

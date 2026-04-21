@@ -23,6 +23,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
+import { getCurrentUser, getCurrentUserRole } from '../utils/auth';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE || 'http://localhost:5000/api',
@@ -57,6 +58,9 @@ const DocumentHub = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [employeeOptions, setEmployeeOptions] = useState([]);
+  const currentUser = getCurrentUser();
+  const currentRole = getCurrentUserRole();
+  const canViewAllDocs = ['HR Manager', 'Super Admin', 'HR', 'System Admin'].includes(currentRole);
 
   const documentTypes = [
     'Identification Docs',
@@ -80,9 +84,13 @@ const DocumentHub = () => {
   // Fetch data on component mount
   useEffect(() => {
     fetchEmployeeDocuments();
-    fetchApplicantDocuments();
+    if (canViewAllDocs) {
+      fetchApplicantDocuments();
+    } else {
+      setNewApplicantDocs([]);
+    }
     fetchAvailableUsers();
-  }, []);
+  }, [canViewAllDocs]);
 
   // Fetch employee documents
   const fetchEmployeeDocuments = async () => {
@@ -106,6 +114,10 @@ const DocumentHub = () => {
 
   // Fetch applicant documents
   const fetchApplicantDocuments = async () => {
+    if (!canViewAllDocs) {
+      setNewApplicantDocs([]);
+      return;
+    }
     try {
       const response = await api.get('/documents/applicant');
       if (response.data.success) {
@@ -117,7 +129,9 @@ const DocumentHub = () => {
       }
     } catch (error) {
       console.error('Error fetching applicant documents:', error);
-      message.error('Failed to fetch applicant documents');
+      if (canViewAllDocs) {
+        message.error('Failed to fetch applicant documents');
+      }
     }
   };
 
@@ -127,6 +141,9 @@ const DocumentHub = () => {
       const response = await api.get('/documents/users/available');
       if (response.data.success) {
         setEmployeeOptions(response.data.data);
+        if (!canViewAllDocs && currentUser?.id) {
+          form.setFieldsValue({ employeeEmail: currentUser.id });
+        }
       }
     } catch (error) {
       console.error('Error fetching available users:', error);
@@ -168,7 +185,7 @@ const DocumentHub = () => {
           fileSize: file.size,
           ...(isNewApplicant
             ? { applicantName }
-            : { userId: employeeEmail }),
+            : { userId: canViewAllDocs ? employeeEmail : currentUser?.id }),
         };
 
         const endpoint = isNewApplicant ? '/documents/applicant' : '/documents/employee';
@@ -316,9 +333,11 @@ const DocumentHub = () => {
         <Space>
           <Button icon={<EyeOutlined />} onClick={() => handleView(record)}>View</Button>
           <Button onClick={() => handleDownload(record)}>Download</Button>
-          <Popconfirm title="Delete this document?" onConfirm={() => handleDelete(record.id, true)}>
-            <Button danger icon={<DeleteOutlined />}>Delete</Button>
-          </Popconfirm>
+          {canViewAllDocs && (
+            <Popconfirm title="Delete this document?" onConfirm={() => handleDelete(record.id, true)}>
+              <Button danger icon={<DeleteOutlined />}>Delete</Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -333,7 +352,11 @@ const DocumentHub = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Form.Item name="employeeEmail" label="Select Employee" rules={[{ required: true }]}>
-                <Select placeholder="Select employee email" loading={loading}>
+                <Select
+                  placeholder="Select employee email"
+                  loading={loading}
+                  disabled={!canViewAllDocs}
+                >
                   {employeeOptions.map(opt => <Option key={opt.value} value={opt.value}>{opt.label}</Option>)}
                 </Select>
               </Form.Item>
@@ -379,9 +402,11 @@ const DocumentHub = () => {
             </Select>
           </Col>
           <Col>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
-              New Applicants
-            </Button>
+            {canViewAllDocs && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
+                New Applicants
+              </Button>
+            )}
           </Col>
         </Row>
 

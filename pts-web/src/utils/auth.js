@@ -55,3 +55,26 @@ export const formatTimeRemaining = (milliseconds) => {
   }
   return `${minutes}m`;
 }; 
+
+const decodeJwtPayload = (token) => {
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getCurrentUser = () => {
+  const token = getAuthToken();
+  return decodeJwtPayload(token);
+};
+
+export const getCurrentUserRole = () => {
+  const user = getCurrentUser();
+  return user?.role || null;
+};

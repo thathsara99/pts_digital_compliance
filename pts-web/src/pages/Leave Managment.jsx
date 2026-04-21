@@ -22,6 +22,7 @@ import { EditOutlined, DeleteOutlined, PlusOutlined, CheckOutlined, CloseOutline
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { getCurrentUserRole } from '../utils/auth';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE || 'http://localhost:5000/api',
@@ -63,6 +64,8 @@ const LeaveManagementPage = () => {
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const currentRole = getCurrentUserRole();
+  const canViewAllLeaveData = ['HR Manager', 'Super Admin', 'System Admin'].includes(currentRole);
 
   // Fetch current user profile
   useEffect(() => {
@@ -268,10 +271,10 @@ const LeaveManagementPage = () => {
         <Space size="middle">
           {record.status === 'Pending' && (
             <>
-              {(currentUser?.role === 'System Admin' || record.employeeEmail === currentUser?.email) && (
+              {(canViewAllLeaveData || record.employeeEmail === currentUser?.email) && (
                 <Button type="link" icon={<EditOutlined />} onClick={() => showDrawer(record)}>Edit</Button>
               )}
-              {currentUser?.role === 'System Admin' && (
+              {canViewAllLeaveData && (
                 <>
                   <Button 
                     type="link" 
@@ -291,14 +294,14 @@ const LeaveManagementPage = () => {
                   </Button>
                 </>
               )}
-              {(currentUser?.role === 'System Admin' || record.employeeEmail === currentUser?.email) && (
+              {(canViewAllLeaveData || record.employeeEmail === currentUser?.email) && (
                 <Popconfirm title="Are you sure to delete this leave?" onConfirm={() => handleDelete(record.id)}>
                   <Button type="link" danger icon={<DeleteOutlined />}>Delete</Button>
                 </Popconfirm>
               )}
             </>
           )}
-          {record.status !== 'Pending' && currentUser?.role === 'System Admin' && (
+          {record.status !== 'Pending' && canViewAllLeaveData && (
             <Popconfirm title="Are you sure to delete this leave?" onConfirm={() => handleDelete(record.id)}>
               <Button type="link" danger icon={<DeleteOutlined />}>Delete</Button>
             </Popconfirm>
@@ -331,7 +334,7 @@ const LeaveManagementPage = () => {
             allowClear
             onChange={(value) => setFilters({ ...filters, employee: value })}
             style={{ width: '100%' }}
-            disabled={currentUser?.role !== 'System Admin'}
+            disabled={!canViewAllLeaveData}
           >
             {[...new Set(data.map(d => d.employee))].map(emp => (
               <Option key={emp} value={emp}>{emp}</Option>

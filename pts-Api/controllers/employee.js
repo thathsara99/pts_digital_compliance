@@ -3,10 +3,67 @@ const { Employee, User, Department } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/db');
 
+const PRIVILEGED_ROLES = new Set(['HR Manager', 'Super Admin', 'HR', 'System Admin']);
+const isPrivilegedRole = (role) => PRIVILEGED_ROLES.has(role);
+
+/** Validate and normalize base64 data-URL strings coming from the client */
+const normalizeDataUrlString = (val) => {
+  if (val == null || val === '') return { value: undefined };
+  if (typeof val !== 'string') return { value: undefined };
+
+  const trimmed = val.trim();
+  const match = trimmed.match(/^data:([\w.+-]+\/[\w.+-]+);base64,([A-Za-z0-9+/=\r\n]+)$/);
+  if (!match) {
+    return { error: 'Invalid file format. Expected a base64 data URL.' };
+  }
+
+  const mimeType = match[1];
+  const base64Payload = match[2].replace(/\s+/g, '');
+  const decoded = Buffer.from(base64Payload, 'base64');
+  const reEncoded = decoded.toString('base64').replace(/=+$/g, '');
+  const inputNormalized = base64Payload.replace(/=+$/g, '');
+
+  if (!decoded.length || reEncoded !== inputNormalized) {
+    return { error: 'Invalid file payload. Please upload the file again.' };
+  }
+
+  return { value: `data:${mimeType};base64,${base64Payload}` };
+};
+
 // Get all employees with user and department info
 const getAllEmployees = async (req, res) => {
   try {
+    const whereClause = {};
+    if (!isPrivilegedRole(req.user?.role)) {
+      whereClause.userId = req.user?.id;
+    }
+
     const employees = await Employee.findAll({
+      where: whereClause,
+      attributes: {
+        exclude: ['passportPhoto', 'employmentContract', 'rightToWorkDocument'],
+        include: [
+          // Presence flags without selecting large TEXT blobs (MySQL; table alias matches Sequelize model name)
+          [
+            sequelize.literal(
+              '(CHAR_LENGTH(COALESCE(`Employee`.`passportPhoto`, \'\')) > 0)'
+            ),
+            'hasPassportPhoto'
+          ],
+          [
+            sequelize.literal(
+              '(CHAR_LENGTH(COALESCE(`Employee`.`employmentContract`, \'\')) > 0)'
+            ),
+            'hasEmploymentContract'
+          ],
+          [
+            sequelize.literal(
+              '(CHAR_LENGTH(COALESCE(`Employee`.`rightToWorkDocument`, \'\')) > 0)'
+            ),
+            'hasRightToWorkDocument'
+          ]
+        ]
+      },
       include: [
         {
           model: User,
@@ -24,8 +81,10 @@ const getAllEmployees = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    const toBool = (v) => v === true || v === 1 || v === '1';
+
     // Transform data to match frontend format
-    const transformedEmployees = employees.map(emp => ({
+    const transformedEmployees = employees.map((emp) => ({
       key: emp.id,
       userId: emp.userId,
       email: emp.user?.email,
@@ -44,7 +103,12 @@ const getAllEmployees = async (req, res) => {
       sortCode: emp.sortCode,
       accountHolder: emp.accountHolder,
       nationality: emp.nationality,
-      status: emp.status
+      status: emp.status,
+      createdAt: emp.createdAt ? emp.createdAt.toISOString() : null,
+      updatedAt: emp.updatedAt ? emp.updatedAt.toISOString() : null,
+      hasPassportPhoto: toBool(emp.get('hasPassportPhoto')),
+      hasEmploymentContract: toBool(emp.get('hasEmploymentContract')),
+      hasRightToWorkDocument: toBool(emp.get('hasRightToWorkDocument'))
     }));
 
     res.json({ success: true, data: transformedEmployees });
@@ -79,6 +143,10 @@ const getEmployeeById = async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
+    if (!isPrivilegedRole(req.user?.role) && employee.userId !== req.user?.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     res.json({ success: true, data: employee });
   } catch (err) {
     console.error('Error fetching employee:', err);
@@ -103,10 +171,7 @@ const createEmployee = async (req, res) => {
       bankName,
       accountNumber,
       sortCode,
-      accountHolder,
-      passportPhoto,
-      employmentContract,
-      rightToWorkDocument
+      accountHolder
     } = req.body;
 
     // Check if employee ID already exists
@@ -119,6 +184,17 @@ const createEmployee = async (req, res) => {
     const existingNI = await Employee.findOne({ where: { niNumber } });
     if (existingNI) {
       return res.status(400).json({ message: 'NI Number already exists' });
+    }
+
+    const filesToValidate = ['passportPhoto', 'employmentContract', 'rightToWorkDocument'];
+    for (const key of filesToValidate) {
+      if (key in req.body) {
+        const { value, error } = normalizeDataUrlString(req.body[key]);
+        if (error) {
+          return res.status(400).json({ message: `${key}: ${error}` });
+        }
+        if (value !== undefined) req.body[key] = value;
+      }
     }
 
     const employee = await Employee.create({
@@ -136,9 +212,9 @@ const createEmployee = async (req, res) => {
       accountNumber,
       sortCode,
       accountHolder,
-      passportPhoto,
-      employmentContract,
-      rightToWorkDocument
+      passportPhoto: req.body.passportPhoto ?? null,
+      employmentContract: req.body.employmentContract ?? null,
+      rightToWorkDocument: req.body.rightToWorkDocument ?? null
     });
 
     res.status(201).json({ success: true, data: employee });
@@ -152,12 +228,34 @@ const createEmployee = async (req, res) => {
 const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
+
+    ['passportPhoto', 'employmentContract', 'rightToWorkDocument'].forEach((key) => {
+      if (key in updates) {
+        const { value, error } = normalizeDataUrlString(updates[key]);
+        if (error) {
+          updates.__fileValidationError = `${key}: ${error}`;
+          return;
+        }
+        if (value !== undefined) updates[key] = value;
+        else delete updates[key];
+      }
+    });
+
+    if (updates.__fileValidationError) {
+      const message = updates.__fileValidationError;
+      delete updates.__fileValidationError;
+      return res.status(400).json({ message });
+    }
 
     // Check if employee exists
     const employee = await Employee.findByPk(id);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    if (!isPrivilegedRole(req.user?.role) && employee.userId !== req.user?.id) {
+      return res.status(403).json({ message: 'You can only update your own employee details' });
     }
 
     // Check for duplicate employee ID if it's being updated
@@ -183,12 +281,14 @@ const updateEmployee = async (req, res) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'contactNumber']
-        },
-        {
-          model: Department,
-          as: 'department',
-          attributes: ['id', 'name']
+          attributes: ['id', 'firstName', 'lastName', 'email', 'contactNumber'],
+          include: [
+            {
+              model: Department,
+              as: 'department',
+              attributes: ['id', 'name']
+            }
+          ]
         }
       ]
     });
@@ -204,11 +304,17 @@ const updateEmployee = async (req, res) => {
 const deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await Employee.destroy({ where: { id } });
-    
-    if (!deleted) {
+    const employee = await Employee.findByPk(id);
+
+    if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
+
+    if (!isPrivilegedRole(req.user?.role)) {
+      return res.status(403).json({ message: 'Only HR Manager or Super Admin can delete employees' });
+    }
+
+    const deleted = await Employee.destroy({ where: { id } });
 
     res.json({ success: true, message: 'Employee deleted successfully' });
   } catch (err) {

@@ -13,6 +13,7 @@ import DocumentHub from "./pages/DocumentHub";
 import Department from "./pages/Department";
 import CompanyProfile from "./pages/CompanyProfile";
 import Attendance from "./pages/Attendance";
+import TaskManager from "./pages/TaskManager";
 import Menue from "./pages/Menue";
 import { isTokenValid, clearAuthToken } from "./utils/auth";
 
@@ -143,6 +144,14 @@ function App() {
         element={
           <MainLayout onLogout={handleLogout}>
             <Attendance />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <MainLayout onLogout={handleLogout}>
+            <TaskManager />
           </MainLayout>
         }
       />

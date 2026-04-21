@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Table, Button, Drawer, Form, Input, Select, DatePicker, Upload, message,
-  Space, Row, Col, Popconfirm, Tooltip
+  Space, Row, Col, Popconfirm, Tooltip, Typography
 } from 'antd';
 import {
   InboxOutlined, PlusOutlined, LeftOutlined, RightOutlined, EditOutlined, DeleteOutlined
@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { getCurrentUserRole } from '../utils/auth';
 dayjs.extend(customParseFormat);
 
 const { Option } = Select;
@@ -33,6 +34,38 @@ const EmployeeManagementPage = () => {
   const [employeeData, setEmployeeData] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [countries, setCountries] = useState([]);
+  /** Blocks submit while image/FileReader processing is in flight (avoids saving null blobs). */
+  const [uploadProcessingCount, setUploadProcessingCount] = useState(0);
+  const uploadBusyRef = useRef(0);
+  /** In-drawer previews for contract PDFs / images (mirrors saved data URLs). */
+  const [docPreviews, setDocPreviews] = useState({
+    employmentContract: null,
+    rightToWorkDocument: null
+  });
+  /** Upload fields must not use Form `name` with Upload (fileList overwrites base64). */
+  const documentFieldsRef = useRef({
+    passportPhoto: null,
+    employmentContract: null,
+    rightToWorkDocument: null
+  });
+  const currentRole = getCurrentUserRole();
+  const canManageAllEmployees = ['HR Manager', 'Super Admin', 'HR', 'System Admin'].includes(currentRole);
+
+  const beginUploadProcessing = () => {
+    uploadBusyRef.current += 1;
+    setUploadProcessingCount((c) => c + 1);
+  };
+  const endUploadProcessing = () => {
+    uploadBusyRef.current = Math.max(0, uploadBusyRef.current - 1);
+    setUploadProcessingCount((c) => Math.max(0, c - 1));
+  };
+
+  const resolveUploadFile = (info) => {
+    if (!info.fileList?.length) return null;
+    const entry = info.fileList[info.fileList.length - 1];
+    const raw = entry.originFileObj ?? entry;
+    return raw instanceof Blob ? raw : null;
+  };
 
   // Fetch countries
   useEffect(() => {
@@ -129,6 +162,12 @@ const EmployeeManagementPage = () => {
   const showDrawer = () => {
     form.resetFields();
     setPreviewUrl(null);
+    documentFieldsRef.current = {
+      passportPhoto: null,
+      employmentContract: null,
+      rightToWorkDocument: null
+    };
+    setDocPreviews({ employmentContract: null, rightToWorkDocument: null });
     setEditingEmployee(null);
     setVisible(true);
   };
@@ -139,7 +178,12 @@ const EmployeeManagementPage = () => {
   };
 
   const handlePhotoUpload = (info) => {
-    const file = info.file.originFileObj;
+    if (!info.fileList?.length) {
+      documentFieldsRef.current.passportPhoto = null;
+      setPreviewUrl(null);
+      return;
+    }
+    const file = resolveUploadFile(info);
     if (!file) return;
 
     const isImage = file.type.startsWith('image/');
@@ -154,47 +198,57 @@ const EmployeeManagementPage = () => {
       return;
     }
 
-    // Compress and convert to base64
+    beginUploadProcessing();
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
 
     img.onload = () => {
-      const maxSize = 300;
-      let { width, height } = img;
-      
-      if (width > height) {
-        if (width > maxSize) {
-          height = (height * maxSize) / width;
-          width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
+      try {
+        const maxSize = 300;
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else if (height > maxSize) {
           width = (width * maxSize) / height;
           height = maxSize;
         }
-      }
 
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-      setPreviewUrl(compressedBase64);
-      form.setFieldValue('passportPhoto', compressedBase64);
-      message.success('Photo uploaded and compressed!');
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        setPreviewUrl(compressedBase64);
+        documentFieldsRef.current.passportPhoto = compressedBase64;
+        message.success('Photo uploaded and compressed!');
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+        endUploadProcessing();
+      }
     };
 
     img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
       message.error('Error processing image');
+      endUploadProcessing();
     };
 
-    const objectUrl = URL.createObjectURL(file);
     img.src = objectUrl;
   };
 
   const handleDocumentUpload = (info, fieldName) => {
-    const file = info.file.originFileObj;
+    if (!info.fileList?.length) {
+      documentFieldsRef.current[fieldName] = null;
+      setDocPreviews((p) => ({ ...p, [fieldName]: null }));
+      return;
+    }
+    const file = resolveUploadFile(info);
     if (!file) return;
 
     const isLt5M = file.size / 1024 / 1024 < 5;
@@ -203,16 +257,28 @@ const EmployeeManagementPage = () => {
       return;
     }
 
+    beginUploadProcessing();
     const reader = new FileReader();
     reader.onload = (e) => {
-      form.setFieldValue(fieldName, e.target.result);
+      const dataUrl = e.target.result;
+      documentFieldsRef.current[fieldName] = dataUrl;
+      setDocPreviews((p) => ({ ...p, [fieldName]: dataUrl }));
       message.success('Document uploaded!');
+      endUploadProcessing();
+    };
+    reader.onerror = () => {
+      message.error('Could not read the file. Try again.');
+      endUploadProcessing();
     };
     reader.readAsDataURL(file);
   };
 
   const onFinish = async (values) => {
     try {
+      if (uploadBusyRef.current > 0) {
+        message.warning('Wait until file uploads finish processing, then save again.');
+        return;
+      }
       // Validate required date fields
       if (!values.dateOfBirth) {
         message.error('Date of Birth is required');
@@ -242,9 +308,9 @@ const EmployeeManagementPage = () => {
         accountNumber: values.accountNumber,
         sortCode: values.sortCode,
         accountHolder: values.accountHolder,
-        passportPhoto: values.passportPhoto,
-        employmentContract: values.employmentContract,
-        rightToWorkDocument: values.rightToWorkDocument
+        passportPhoto: documentFieldsRef.current.passportPhoto,
+        employmentContract: documentFieldsRef.current.employmentContract,
+        rightToWorkDocument: documentFieldsRef.current.rightToWorkDocument
       };
 
       if (editingEmployee) {
@@ -287,9 +353,54 @@ const EmployeeManagementPage = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
+
+    const pdfColumns = [
+      { key: 'email', title: 'Employee Email' },
+      { key: 'name', title: 'Name' },
+      { key: 'department', title: 'Department' },
+      { key: 'dateofBirth', title: 'Date of Birth' },
+      { key: 'employeeId', title: 'Employee ID' },
+      { key: 'emergencyContact', title: 'Emergency Contact' },
+      { key: 'niNumber', title: 'NI Number' },
+      { key: 'visaType', title: 'Visa Type' },
+      { key: 'eVisaShareCode', title: 'E-Visa Share Code' },
+      { key: 'visaStart', title: 'Visa Start' },
+      { key: 'visaEnd', title: 'Visa End' },
+      { key: 'bankName', title: 'Bank Name' },
+      { key: 'accountNumber', title: 'Account Number' },
+      { key: 'sortCode', title: 'Sort Code' },
+      { key: 'accountHolder', title: 'Account Holder' },
+      { key: 'nationality', title: 'Nationality' },
+      { key: 'status', title: 'Status' },
+      { key: 'hasPassportPhoto', title: 'Passport Photo' },
+      { key: 'hasEmploymentContract', title: 'Employment Contract' },
+      { key: 'hasRightToWorkDocument', title: 'Right To Work' },
+      { key: 'createdAt', title: 'Created' },
+      { key: 'updatedAt', title: 'Updated' }
+    ];
+
+    const formatPdfValue = (key, value) => {
+      if (value == null || value === '') return '—';
+      if (
+        key === 'hasPassportPhoto' ||
+        key === 'hasEmploymentContract' ||
+        key === 'hasRightToWorkDocument'
+      ) {
+        return value ? 'Yes' : 'No';
+      }
+      if (key === 'createdAt' || key === 'updatedAt') {
+        return dayjs(value).isValid() ? dayjs(value).format('DD/MM/YYYY HH:mm') : '—';
+      }
+      return String(value);
+    };
+
     autoTable(doc, {
-      head: [['Email', 'Employee ID', 'NI Number', 'Bank']],
-      body: employeeData.map(d => [d.email, d.employeeId, d.niNumber, d.bankName])
+      head: [pdfColumns.map((c) => c.title)],
+      body: filteredData.map((row) => pdfColumns.map((c) => formatPdfValue(c.key, row[c.key]))),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [24, 144, 255] },
+      margin: { top: 12, left: 8, right: 8, bottom: 12 },
+      horizontalPageBreak: true
     });
     doc.save('EmployeeDetails.pdf');
   };
@@ -305,6 +416,15 @@ const EmployeeManagementPage = () => {
       const employee = result.data;
       setEditingEmployee(record);
       setPreviewUrl(employee.passportPhoto || null);
+      documentFieldsRef.current = {
+        passportPhoto: employee.passportPhoto || null,
+        employmentContract: employee.employmentContract || null,
+        rightToWorkDocument: employee.rightToWorkDocument || null
+      };
+      setDocPreviews({
+        employmentContract: employee.employmentContract || null,
+        rightToWorkDocument: employee.rightToWorkDocument || null
+      });
       setVisible(true);
 
       const initialValues = {
@@ -321,10 +441,7 @@ const EmployeeManagementPage = () => {
         bankName: employee.bankName,
         accountNumber: employee.accountNumber,
         sortCode: employee.sortCode,
-        accountHolder: employee.accountHolder,
-        passportPhoto: employee.passportPhoto,
-        employmentContract: employee.employmentContract,
-        rightToWorkDocument: employee.rightToWorkDocument
+        accountHolder: employee.accountHolder
       };
 
       form.setFieldsValue(initialValues);
@@ -350,20 +467,89 @@ const EmployeeManagementPage = () => {
     }
   };
 
+  const renderStoredDocPreview = (dataUrl, label) => {
+    if (!dataUrl) return null;
+    if (dataUrl.startsWith('data:image/')) {
+      return (
+        <img
+          src={dataUrl}
+          alt={label}
+          style={{ marginTop: 8, maxWidth: '100%', borderRadius: 4, border: '1px solid #f0f0f0' }}
+        />
+      );
+    }
+    if (dataUrl.startsWith('data:application/pdf')) {
+      return (
+        <div style={{ marginTop: 8 }}>
+          <iframe
+            title={label}
+            src={dataUrl}
+            style={{ width: '100%', height: 260, border: '1px solid #f0f0f0', borderRadius: 4 }}
+          />
+          <div>
+            <Typography.Link href={dataUrl} target="_blank" rel="noreferrer">
+              Open in new tab
+            </Typography.Link>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div style={{ marginTop: 8 }}>
+        <Typography.Text type="secondary">Document attached — </Typography.Text>
+        <Typography.Link href={dataUrl} target="_blank" rel="noreferrer">
+          Open or download
+        </Typography.Link>
+      </div>
+    );
+  };
+
   const columns = [
     { title: 'Employee Email', dataIndex: 'email', key: 'email' },
     { title: 'Employee ID', dataIndex: 'employeeId', key: 'employeeId' },
     { title: 'NI Number', dataIndex: 'niNumber', key: 'niNumber' },
     { title: 'Bank Name', dataIndex: 'bankName', key: 'bankName' },
     {
+      title: 'Documents',
+      key: 'documents',
+      width: 112,
+      render: (_, r) => (
+        <Space size={4}>
+          <Tooltip title="Passport photo">
+            <span style={{ fontWeight: 600, color: r.hasPassportPhoto ? '#52c41a' : '#d9d9d9' }}>P</span>
+          </Tooltip>
+          <Tooltip title="Employment contract">
+            <span style={{ fontWeight: 600, color: r.hasEmploymentContract ? '#52c41a' : '#d9d9d9' }}>C</span>
+          </Tooltip>
+          <Tooltip title="Right to work">
+            <span style={{ fontWeight: 600, color: r.hasRightToWorkDocument ? '#52c41a' : '#d9d9d9' }}>R</span>
+          </Tooltip>
+        </Space>
+      )
+    },
+    {
+      title: 'Created',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (v) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—')
+    },
+    {
+      title: 'Updated',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      render: (v) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—')
+    },
+    {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Space>
           <Button icon={<EditOutlined />} onClick={() => editEmployee(record)} />
-          <Popconfirm title="Delete this employee?" onConfirm={() => deleteEmployee(record.key)}>
-            <Button danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          {canManageAllEmployees && (
+            <Popconfirm title="Delete this employee?" onConfirm={() => deleteEmployee(record.key)}>
+              <Button danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -391,9 +577,11 @@ const EmployeeManagementPage = () => {
             </Select>
             <Button onClick={exportToExcel}>Export to Excel</Button>
             <Button onClick={exportToPDF}>Export to PDF</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
-              Add Employee
-            </Button>
+            {canManageAllEmployees && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
+                Add Employee
+              </Button>
+            )}
           </Space>
         </Col>
       </Row>
@@ -412,8 +600,12 @@ const EmployeeManagementPage = () => {
         open={visible}
         footer={
           <div style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={() => form.submit()}>
-              {editingEmployee ? 'Update' : 'Submit'}
+            <Button
+              type="primary"
+              disabled={uploadProcessingCount > 0}
+              onClick={() => form.submit()}
+            >
+              {uploadProcessingCount > 0 ? 'Processing upload…' : editingEmployee ? 'Update' : 'Submit'}
             </Button>
           </div>
         }
@@ -462,16 +654,20 @@ const EmployeeManagementPage = () => {
             <Input />
           </Form.Item>
 
-          <Form.Item name="passportPhoto" label="Passport Photo">
+          <Form.Item label="Passport Photo">
             <Upload beforeUpload={() => false} maxCount={1} accept="image/*" onChange={handlePhotoUpload}>
               <Button icon={<InboxOutlined />}>Upload</Button>
             </Upload>
             {previewUrl && (
-              <img src={previewUrl} alt="Preview" style={{ marginTop: 8, width: '100%' }} />
+              <img
+                src={previewUrl}
+                alt="Preview"
+                style={{ marginTop: 8, width: 180, maxWidth: '100%', height: 'auto' }}
+              />
             )}
           </Form.Item>
 
-          <Form.Item name="employmentContract" label="Employment Contract">
+          <Form.Item label="Employment Contract">
             <Upload 
               beforeUpload={() => false} 
               maxCount={1} 
@@ -480,6 +676,7 @@ const EmployeeManagementPage = () => {
             >
               <Button icon={<InboxOutlined />}>Upload</Button>
             </Upload>
+            {renderStoredDocPreview(docPreviews.employmentContract, 'Employment contract')}
           </Form.Item>
 
           <Form.Item name="niNumber" label="NI Number" rules={[{ required: true, message: 'Please enter NI number' }]}>
@@ -494,7 +691,7 @@ const EmployeeManagementPage = () => {
             <Input />
           </Form.Item>
 
-          <Form.Item name="rightToWorkDocument" label="Right to Work Document">
+          <Form.Item label="Right to Work Document">
             <Upload 
               beforeUpload={() => false} 
               maxCount={1} 
@@ -503,6 +700,7 @@ const EmployeeManagementPage = () => {
             >
               <Button icon={<InboxOutlined />}>Upload</Button>
             </Upload>
+            {renderStoredDocPreview(docPreviews.rightToWorkDocument, 'Right to work')}
           </Form.Item>
 
           <Row gutter={16}>
