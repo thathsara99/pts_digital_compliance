@@ -21,6 +21,7 @@ import { apiClient } from '../config/api';
 import { getCurrentUserRole } from '../utils/auth';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import PageBanner from '../components/PageBanner';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -220,9 +221,11 @@ const TaskManager = () => {
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col><Title level={3} style={{ margin: 0 }}>Task Manager</Title></Col>
-        <Col>
+      <PageBanner
+        label="Productivity"
+        title="Task Manager"
+        subtitle="Plan, assign, and track task progress across the team."
+        actions={(
           <Space>
             <Button onClick={exportBoardAsImage}>Export as Image</Button>
             <Button onClick={exportBoardAsPdf}>Export as PDF</Button>
@@ -230,8 +233,8 @@ const TaskManager = () => {
               Add Task
             </Button>
           </Space>
-        </Col>
-      </Row>
+        )}
+      />
 
       <Row gutter={16} ref={boardRef}>
         {STATUSES.map((status) => (

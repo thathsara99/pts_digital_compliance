@@ -4,6 +4,7 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import AttendanceHistory from '../components/AttendanceHistory';
+import PageBanner from '../components/PageBanner';
 
 const { Content } = Layout;
 const { Title } = Typography;
@@ -12,12 +13,16 @@ const Attendance = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Content style={{ margin: '24px', padding: '24px', borderRadius: '8px' }}>
-        <Title level={2} style={{ marginBottom: '24px' }}>
-          <Space>
-            <ClockCircleOutlined />
-            Attendance Management
-          </Space>
-        </Title>
+        <PageBanner
+          label="Attendance"
+          title="Attendance Management"
+          subtitle="Track employee attendance logs and working patterns."
+          actions={(
+            <Space>
+              <ClockCircleOutlined style={{ color: '#fff' }} />
+            </Space>
+          )}
+        />
 
         {/* Attendance History */}
         <AttendanceHistory />

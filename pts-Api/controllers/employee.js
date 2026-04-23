@@ -463,44 +463,71 @@ const getDashboardStats = async (req, res) => {
     const expiryNotifications = [];
 
     employees.forEach(emp => {
-      if (emp.visaEndDate) {
-        const visaEndDate = new Date(emp.visaEndDate);
-        const daysUntilExpiry = Math.ceil((visaEndDate - today) / (1000 * 60 * 60 * 24));
+      const employeeName = emp.user ? `${emp.user.firstName} ${emp.user.lastName}` : 'Unknown';
+      const formattedVisaStartDate = emp.visaStartDate ? new Date(emp.visaStartDate).toLocaleDateString('en-GB') : 'N/A';
 
-        if (visaEndDate < today) {
-          expiredCount++;
-          expiryNotifications.push({
-            key: `emp-${emp.id}`,
-            employee: emp.user ? `${emp.user.firstName} ${emp.user.lastName}` : 'Unknown',
-            visaType: emp.visaType || 'N/A',
-            expiresIn: 'Expired',
-            status: 'Expired'
-          });
-        } else if (daysUntilExpiry <= 30) {
-          expiringSoonCount++;
-          expiryNotifications.push({
-            key: `emp-${emp.id}`,
-            employee: emp.user ? `${emp.user.firstName} ${emp.user.lastName}` : 'Unknown',
-            visaType: emp.visaType || 'N/A',
-            expiresIn: `${daysUntilExpiry} days`,
-            status: 'Expiring Soon'
-          });
-        } else {
-          validCount++;
-        }
+      if (!emp.visaEndDate) {
+        expiryNotifications.push({
+          key: `emp-${emp.id}`,
+          employee: employeeName,
+          visaType: emp.visaType || 'N/A',
+          expiresIn: 'N/A',
+          visaStartDate: formattedVisaStartDate,
+          expiryDate: 'N/A',
+          status: 'No Visa Data'
+        });
+        return;
+      }
+
+      const visaEndDate = new Date(emp.visaEndDate);
+      const daysUntilExpiry = Math.ceil((visaEndDate - today) / (1000 * 60 * 60 * 24));
+      const formattedExpiryDate = visaEndDate.toLocaleDateString('en-GB');
+
+      if (visaEndDate < today) {
+        expiredCount++;
+        expiryNotifications.push({
+          key: `emp-${emp.id}`,
+          employee: employeeName,
+          visaType: emp.visaType || 'N/A',
+          expiresIn: 'Expired',
+          visaStartDate: formattedVisaStartDate,
+          expiryDate: formattedExpiryDate,
+          status: 'Expired'
+        });
+      } else if (daysUntilExpiry <= 30) {
+        expiringSoonCount++;
+        expiryNotifications.push({
+          key: `emp-${emp.id}`,
+          employee: employeeName,
+          visaType: emp.visaType || 'N/A',
+          expiresIn: `${daysUntilExpiry} days`,
+          visaStartDate: formattedVisaStartDate,
+          expiryDate: formattedExpiryDate,
+          status: 'Expiring Soon'
+        });
+      } else {
+        validCount++;
+        expiryNotifications.push({
+          key: `emp-${emp.id}`,
+          employee: employeeName,
+          visaType: emp.visaType || 'N/A',
+          expiresIn: `${daysUntilExpiry} days`,
+          visaStartDate: formattedVisaStartDate,
+          expiryDate: formattedExpiryDate,
+          status: 'Valid'
+        });
       }
     });
 
-    // Sort notifications by expiry (expired first, then by days remaining)
+    // Sort notifications by priority (expired, expiring soon, valid) then by days
     expiryNotifications.sort((a, b) => {
-      if (a.status === 'Expired' && b.status !== 'Expired') return -1;
-      if (a.status !== 'Expired' && b.status === 'Expired') return 1;
-      if (a.status === 'Expiring Soon' && b.status === 'Expiring Soon') {
-        const aDays = parseInt(a.expiresIn) || 0;
-        const bDays = parseInt(b.expiresIn) || 0;
-        return aDays - bDays;
-      }
-      return 0;
+      const statusPriority = { Expired: 0, 'Expiring Soon': 1, Valid: 2, 'No Visa Data': 3 };
+      const aPriority = statusPriority[a.status] ?? 99;
+      const bPriority = statusPriority[b.status] ?? 99;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      const aDays = parseInt(a.expiresIn) || 0;
+      const bDays = parseInt(b.expiresIn) || 0;
+      return aDays - bDays;
     });
 
     // Get recent employees for the employee list (limit to 5)
@@ -523,7 +550,7 @@ const getDashboardStats = async (req, res) => {
           expiringSoon: expiringSoonCount,
           valid: validCount
         },
-        expiryNotifications: expiryNotifications.slice(0, 10), // Limit to 10 for dashboard
+        expiryNotifications,
         recentEmployees
       }
     });

@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { getCurrentUser, getCurrentUserRole } from '../utils/auth';
+import PageBanner from '../components/PageBanner';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE || 'http://localhost:5000/api',
@@ -345,9 +346,17 @@ const DocumentHub = () => {
 
   return (
     <div style={{ padding: '30px' }}>
+      <PageBanner
+        label="Compliance"
+        title="Document Hub"
+        subtitle="Upload, organize, and review employee and applicant documents."
+        actions={canViewAllDocs ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
+            New Applicants
+          </Button>
+        ) : null}
+      />
       <Card bordered={false} style={{ background: '#f9f9f9', borderRadius: '12px' }}>
-        <Title level={3}>📄 Document Hub</Title>
-
         <Form form={form} layout="vertical">
           <Row gutter={16}>
             <Col span={6}>
@@ -402,11 +411,7 @@ const DocumentHub = () => {
             </Select>
           </Col>
           <Col>
-            {canViewAllDocs && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
-                New Applicants
-              </Button>
-            )}
+            <Title level={5} style={{ margin: 0 }}>Employee Documents</Title>
           </Col>
         </Row>
 

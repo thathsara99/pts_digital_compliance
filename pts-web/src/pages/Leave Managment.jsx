@@ -15,14 +15,15 @@ import {
   DatePicker,
   Card,
   Modal,
-  Spin,
   Tag,
+  Typography,
 } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { getCurrentUserRole } from '../utils/auth';
+import './LeaveManagement.css';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE || 'http://localhost:5000/api',
@@ -45,6 +46,7 @@ api.interceptors.request.use(
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { Title, Text } = Typography;
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF4D4F'];
 
@@ -247,9 +249,6 @@ const LeaveManagementPage = () => {
     { name: 'Rejected', value: 0 },
   ];
 
-  console.log('Pie chart data:', leaveSummaryData);
-  console.log('Statistics state:', statistics);
-
   const columns = [
     { title: 'Employee', dataIndex: 'employee', key: 'employee' },
     { title: 'Leave Type', dataIndex: 'leaveType', key: 'leaveType' },
@@ -311,109 +310,117 @@ const LeaveManagementPage = () => {
     },
   ];
 
-  return (
-    <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col><h2>Leave Management</h2></Col>
-        <Col>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showDrawer()}>Apply Leave</Button>
-        </Col>
-      </Row>
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 
-      {/* Filters */}
-      <Row gutter={16} style={{ marginBottom: 20 }}>
-        <Col span={8}>
+  const metricCards = [
+    { label: 'Total Annual Leave', value: 20, tone: 'primary' },
+    { label: 'Taken Annual Leave', value: statistics.leaveDays.annual, tone: 'default' },
+    { label: 'Taken Sick Leave', value: statistics.leaveDays.sick, tone: 'warning' },
+    { label: 'Taken Casual Leave', value: statistics.leaveDays.casual, tone: 'success' },
+    { label: 'Remaining Annual Leave', value: Math.max(20 - statistics.leaveDays.annual, 0), tone: 'highlight' },
+  ];
+
+  return (
+    <div className="leave-page">
+      <div className="leave-hero">
+        <div>
+          <Text className="leave-hero-label">Leave Operations</Text>
+          <Title level={2} className="leave-hero-title">Leave Management</Title>
+          <Text className="leave-hero-subtitle">
+            Manage leave requests, approvals, and balances with a clearer and faster workflow.
+          </Text>
+        </div>
+        <div className="leave-hero-actions">
+          <div className="leave-date-pill">{today}</div>
+          <Button className="leave-apply-btn" type="primary" icon={<PlusOutlined />} onClick={() => showDrawer()}>
+            Apply Leave
+          </Button>
+        </div>
+      </div>
+
+      <Card className="leave-filter-card" bordered={false}>
+        <Row gutter={16}>
+          <Col xs={24} md={12} lg={8}>
+            <Text className="leave-filter-label">Date Range</Text>
           <RangePicker
             onChange={(dates) => setFilters({ ...filters, dateRange: dates })}
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginTop: 6 }}
           />
-        </Col>
-        <Col span={8}>
+          </Col>
+          <Col xs={24} md={12} lg={8}>
+            <Text className="leave-filter-label">Employee</Text>
           <Select
             placeholder="Filter by Employee"
             allowClear
             onChange={(value) => setFilters({ ...filters, employee: value })}
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginTop: 6 }}
             disabled={!canViewAllLeaveData}
           >
             {[...new Set(data.map(d => d.employee))].map(emp => (
               <Option key={emp} value={emp}>{emp}</Option>
             ))}
           </Select>
+          </Col>
+        </Row>
+      </Card>
+
+      <Row gutter={[20, 20]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={10}>
+          <Card className="leave-card leave-summary-card" title="Leave Summary" bordered={false}>
+            {leaveSummaryData.length > 0 && leaveSummaryData.some(item => item.value > 0) ? (
+              <div className="leave-pie-wrap">
+                <PieChart width={320} height={250}>
+                  <Pie
+                    data={leaveSummaryData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={82}
+                    label
+                  >
+                    {leaveSummaryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </div>
+            ) : (
+              <div className="leave-empty-state">No leave data available</div>
+            )}
+          </Card>
+          </Col>
+        <Col xs={24} lg={14}>
+          <Row gutter={[14, 14]}>
+            {metricCards.map((item) => (
+              <Col xs={24} sm={12} key={item.label}>
+                <Card className={`leave-metric-card ${item.tone}`} bordered={false}>
+                  <Text className="metric-label">{item.label}</Text>
+                  <Title level={3} className="metric-value">{item.value} Days</Title>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         </Col>
       </Row>
 
-      {/* Pie Chart and Summary Cards */}
-<Row gutter={16} style={{ marginBottom: 24 }}>
-  <Col xs={24} md={12}>
-    <Card title="Leave Summary (Pie Chart)" bordered={false}>
-      {leaveSummaryData.length > 0 && leaveSummaryData.some(item => item.value > 0) ? (
-        <PieChart width={300} height={250}>
-          <Pie
-            data={leaveSummaryData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={80}
-            label
-          >
-            {leaveSummaryData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-          No leave data available
-        </div>
-      )}
-    </Card>
-  </Col>
-
-        <Col xs={24} md={12}>
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            <Card title="Total Annual Leave" bordered={false}>
-              <h3 style={{ margin: 0 }}>20 Days</h3>
-            </Card>
-          </Col>
-          <Col span={24}>
-            <Card title="Taken Annual Leave" bordered={false}>
-              <h3 style={{ margin: 0 }}>{statistics.leaveDays.annual} Days</h3>
-            </Card>
-          </Col>
-          <Col span={24}>
-            <Card title="Taken Sick Leave" bordered={false}>
-              <h3 style={{ margin: 0 }}>{statistics.leaveDays.sick} Days</h3>
-            </Card>
-          </Col>
-          <Col span={24}>
-            <Card title="Taken Casual Leave" bordered={false}>
-              <h3 style={{ margin: 0 }}>{statistics.leaveDays.casual} Days</h3>
-            </Card>
-          </Col>
-          <Col span={24}>
-            <Card title="Remaining Annual Leave" bordered={false}>
-              <h3 style={{ margin: 0 }}>{20 - statistics.leaveDays.annual} Days</h3>
-            </Card>
-          </Col>
-        </Row>
-      </Col>
-</Row>
-
-
-
-      {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={getFilteredData()}
-        bordered
-        pagination={{ pageSize: 5 }}
-        loading={loading}
-      />
+      <Card className="leave-card leave-table-card" bordered={false}>
+        <Table
+          columns={columns}
+          dataSource={getFilteredData()}
+          pagination={{ pageSize: 6 }}
+          loading={loading}
+          className="leave-table"
+          scroll={{ x: 1100 }}
+        />
+      </Card>
 
       {/* Reject Modal */}
       <Modal

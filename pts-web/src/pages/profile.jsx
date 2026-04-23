@@ -12,6 +12,7 @@ import {
   Divider,
 } from 'antd';
 import { UploadOutlined, SaveOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
+import PageBanner from '../components/PageBanner';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
 
@@ -224,7 +225,12 @@ const ProfilePage = () => {
 
   return (
     <div style={{ maxWidth: 800, margin: 'auto', padding: '20px' }}>
-      <Card title="My Profile">
+      <PageBanner
+        label="Account"
+        title="My Profile"
+        subtitle="Update your personal details, profile photo, and password."
+      />
+      <Card>
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Row gutter={24}>
             <Col span={6} style={{ textAlign: 'center' }}>

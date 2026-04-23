@@ -1,14 +1,15 @@
 // config/api.js
 
 // API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+const envApiBase = process.env.REACT_APP_API_BASE;
+export const API_BASE_URL = (envApiBase && envApiBase.trim()) || 'http://82.165.218.214:5000/api';
 
 // Axios instance with default configuration
 import axios from 'axios';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 seconds timeout
+  timeout: 15000, // 15 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   },

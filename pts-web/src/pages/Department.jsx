@@ -18,6 +18,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
+import PageBanner from '../components/PageBanner';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
 
@@ -214,11 +215,11 @@ const DepartmentsPage = () => {
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <h2>Departments</h2>
-        </Col>
-        <Col>
+      <PageBanner
+        label="Organization"
+        title="Departments"
+        subtitle="Create and manage departments with status controls."
+        actions={(
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -226,8 +227,8 @@ const DepartmentsPage = () => {
           >
             Add Department
           </Button>
-        </Col>
-      </Row>
+        )}
+      />
 
       {error && (
         <div style={{ color: 'red', marginBottom: 16 }}>

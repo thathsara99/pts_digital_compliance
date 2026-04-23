@@ -14,6 +14,7 @@ import {
   Col 
 } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import PageBanner from '../components/PageBanner';
 
 const { Option } = Select;
 
@@ -116,20 +117,20 @@ const TemplatesPage = () => {
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <h2>Templates</h2>
-        </Col>
-        <Col>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+      <PageBanner
+        label="Configuration"
+        title="Templates"
+        subtitle="Manage reusable templates and required input settings."
+        actions={(
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => showDrawer()}
           >
             Add New
           </Button>
-        </Col>
-      </Row>
+        )}
+      />
 
       <Table 
         columns={columns} 

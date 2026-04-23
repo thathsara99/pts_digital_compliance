@@ -1,0 +1,64 @@
+.shared-page-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #0f172a 0%, #1d4ed8 60%, #2563eb 100%);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
+}
+
+.shared-page-banner-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.shared-page-banner-title.ant-typography {
+  color: #fff;
+  margin: 0 0 6px;
+}
+
+.shared-page-banner-subtitle.ant-typography {
+  max-width: 680px;
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.shared-page-banner-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.shared-page-banner-date {
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-weight: 500;
+}
+
+.shared-page-banner-actions .ant-btn {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .shared-page-banner {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .shared-page-banner-right {
+    align-items: flex-start;
+  }
+}

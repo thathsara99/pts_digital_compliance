@@ -7,6 +7,7 @@ import {
   message,
   Spin
 } from 'antd';
+import { CheckCircleOutlined, ClockCircleOutlined, LogoutOutlined } from '@ant-design/icons';
 import { apiClient } from '../config/api';
 
 const { Title, Text } = Typography;
@@ -144,102 +145,111 @@ const MinimalClockInCard = () => {
     return (
       <Card 
         style={{
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          border: 'none',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden'
+          boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
+          height: '100%'
         }}
         bodyStyle={{ padding: '24px', textAlign: 'center' }}
       >
         <Spin size="large" />
         <div style={{ marginTop: 16 }}>
-          <Text style={{ color: 'white' }}>Loading attendance status...</Text>
+          <Text type="secondary">Loading attendance status...</Text>
         </div>
       </Card>
     );
   }
 
+  const statusText = isClockedIn
+    ? 'Currently Working'
+    : hasClockedOut
+      ? 'Already Clocked Out'
+      : 'Ready to Clock In';
+
   return (
     <Card
       style={{
-        background: isClockedIn 
-          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-          : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        border: 'none',
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
         borderRadius: '16px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden'
+        boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
+        height: '100%'
       }}
       bodyStyle={{ padding: '24px' }}
     >
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
         <Space direction="vertical" size="small">
-          <div style={{ 
-            fontSize: '32px', 
-            color: 'white',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+          <div style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: '#eff6ff',
+            color: '#2563eb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto',
+            fontSize: 20,
           }}>
-            🕐
+            <ClockCircleOutlined />
           </div>
-          <Title level={3} style={{ color: 'white', margin: 0 }}>
+          <Title level={4} style={{ color: '#0f172a', margin: 0 }}>
             Time Tracking
           </Title>
-          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
+          <Text type="secondary" style={{ fontSize: '13px' }}>
             {getCurrentDate()}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: '16px', fontWeight: 'bold' }}>
+          <Text style={{ color: '#475569', fontSize: '15px', fontWeight: 600 }}>
             {getCurrentTime()}
           </Text>
         </Space>
       </div>
 
-      {/* Current Status */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ 
-          background: 'rgba(255,255,255,0.2)', 
-          borderRadius: '12px', 
-          padding: '16px',
-          backdropFilter: 'blur(10px)'
+      <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+        <div style={{
+          borderRadius: '12px',
+          padding: '14px',
+          border: '1px solid #e2e8f0',
+          background: '#f8fafc'
         }}>
-          <Text style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-            {isClockedIn ? 'Currently Working' : hasClockedOut ? 'Already Clocked Out' : 'Not Clocked In'}
+          <Text style={{ color: '#334155', fontSize: '14px', fontWeight: 600 }}>
+            {statusText}
           </Text>
-          <div style={{ marginTop: '8px' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '24px', fontWeight: 'bold' }}>
+          <div style={{ marginTop: 6 }}>
+            <Text style={{ color: '#0f172a', fontSize: '26px', fontWeight: 700 }}>
               {formatTime(timeWorked)}
             </Text>
           </div>
         </div>
       </div>
 
-      {/* Action Button */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+      <div style={{ textAlign: 'center' }}>
         <Button
           type="primary"
           size="large"
           loading={loading}
           disabled={hasClockedOut && !isClockedIn}
           onClick={handleToggle}
+          icon={isClockedIn ? <LogoutOutlined /> : <CheckCircleOutlined />}
           style={{
             background: hasClockedOut && !isClockedIn 
-              ? '#8c8c8c' 
+              ? '#94a3b8' 
               : isClockedIn 
-                ? '#ff4d4f' 
-                : '#52c41a',
+                ? '#ef4444' 
+                : '#16a34a',
             border: 'none',
-            borderRadius: '8px',
-            height: '48px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            boxShadow: hasClockedOut && !isClockedIn ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.2)',
-            minWidth: '160px',
+            borderRadius: '10px',
+            height: '44px',
+            fontSize: '15px',
+            fontWeight: 600,
+            boxShadow: hasClockedOut && !isClockedIn ? 'none' : '0 8px 18px rgba(2, 6, 23, 0.15)',
+            minWidth: '190px',
             cursor: hasClockedOut && !isClockedIn ? 'not-allowed' : 'pointer'
           }}
           title={hasClockedOut && !isClockedIn ? 'You have already clocked out today. You cannot clock in again on the same day.' : ''}
         >
-          {isClockedIn ? '🕐 Clock Out' : hasClockedOut ? '✅ Already Clocked Out' : '✅ Clock In'}
+          {isClockedIn ? 'Clock Out' : hasClockedOut ? 'Already Clocked Out' : 'Clock In'}
         </Button>
       </div>
     </Card>

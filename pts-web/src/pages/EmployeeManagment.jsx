@@ -12,6 +12,7 @@ import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { getCurrentUserRole } from '../utils/auth';
+import PageBanner from '../components/PageBanner';
 dayjs.extend(customParseFormat);
 
 const { Option } = Select;
@@ -561,20 +562,12 @@ const EmployeeManagementPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col><h2>Employee Management</h2></Col>
-        <Col>
+      <PageBanner
+        label="Workforce"
+        title="Employee Management"
+        subtitle="Manage employee records, documents, and export reports."
+        actions={(
           <Space>
-            <Select
-              placeholder="Filter by Email"
-              onChange={setFilteredEmail}
-              allowClear
-              style={{ width: 200 }}
-            >
-              {Array.from(new Set(employeeData.map(emp => emp.email))).map(email => (
-                <Option key={email} value={email}>{email}</Option>
-              ))}
-            </Select>
             <Button onClick={exportToExcel}>Export to Excel</Button>
             <Button onClick={exportToPDF}>Export to PDF</Button>
             {canManageAllEmployees && (
@@ -583,6 +576,21 @@ const EmployeeManagementPage = () => {
               </Button>
             )}
           </Space>
+        )}
+      />
+
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Select
+            placeholder="Filter by Email"
+            onChange={setFilteredEmail}
+            allowClear
+            style={{ width: 260 }}
+          >
+            {Array.from(new Set(employeeData.map(emp => emp.email))).map(email => (
+              <Option key={email} value={email}>{email}</Option>
+            ))}
+          </Select>
         </Col>
       </Row>
 

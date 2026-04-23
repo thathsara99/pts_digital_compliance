@@ -23,6 +23,7 @@ import {
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import axios from 'axios';
+import PageBanner from '../components/PageBanner';
 
 const { Panel } = Collapse;
 const { Step } = Steps;
@@ -276,8 +277,12 @@ const CompanyProfilePage = () => {
 
   return (
     <div style={{ padding: '50px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Card
+      <PageBanner
+        label="Organization"
         title="Company Profile"
+        subtitle="Maintain company information and compliance records."
+      />
+      <Card
         style={{
           maxWidth: 1000,
           height: '90vh',

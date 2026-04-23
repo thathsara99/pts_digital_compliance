@@ -15,6 +15,8 @@ import {
   message
 } from 'antd';
 import { Pie, Bar } from '@ant-design/plots';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   TeamOutlined,
   ExclamationCircleOutlined,
@@ -26,6 +28,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ClockInWrapper from '../components/ClockInWrapper';
 import { apiClient } from '../config/api';
+import './Home.css';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -97,11 +100,22 @@ const App = () => {
       render: (text) => <Text type="warning">{text}</Text>
     },
     {
+      title: 'Expiry Date',
+      dataIndex: 'expiryDate',
+      render: (text) => <Text>{text || 'N/A'}</Text>
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       render: (status) => (
         <Badge 
-          status={status === 'Expiring Soon' ? 'warning' : 'error'} 
+          status={
+            status === 'Expiring Soon'
+              ? 'warning'
+              : status === 'Valid'
+                ? 'success'
+                : 'error'
+          }
           text={status} 
         />
       ),
@@ -121,8 +135,18 @@ const App = () => {
         setDashboardData(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      message.error('Failed to load dashboard data');
+      // Retry once for transient network/timeouts on hard refresh.
+      try {
+        const retryResponse = await apiClient.get('/employees/dashboard-stats');
+        if (retryResponse.data.success) {
+          setDashboardData(retryResponse.data.data);
+          return;
+        }
+      } catch (retryError) {
+        console.error('Error fetching dashboard data:', retryError);
+        const errorMessage = retryError.response?.data?.message || 'Failed to load dashboard data';
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -136,35 +160,6 @@ const App = () => {
   ];
 
   const departmentData = dashboardData.departmentData || [];
-
-  const pieConfig = {
-    data: visaStatusData,
-    angleField: 'value',
-    colorField: 'type',
-    radius: 0.8,
-    innerRadius: 0.6,
-    label: {
-      position: 'inner',
-      content: ({ percent }) => `${(percent * 100).toFixed(0)}%`,
-      style: {
-        fontSize: 12,
-        textAlign: 'center',
-      },
-    },
-    interactions: [{ type: 'element-active' }],
-    color: ['#ff4d4f', '#faad14', '#52c41a'],
-    height: 180,
-    statistic: {
-      title: false,
-      content: {
-        style: {
-          fontSize: '14px',
-          color: '#595959',
-        },
-        content: 'Visa Status',
-      },
-    },
-  };
 
   const barConfig = {
     data: departmentData,
@@ -195,6 +190,57 @@ const App = () => {
     },
   };
 
+  const exportExpiryNotificationsPdf = () => {
+    const allNotifications = dashboardData.expiryNotifications || [];
+    const expiredCount = allNotifications.filter((item) => item.status === 'Expired').length;
+    const expiringSoonCount = allNotifications.filter((item) => item.status === 'Expiring Soon').length;
+    const validCount = allNotifications.filter((item) => item.status === 'Valid').length;
+    const noVisaDataCount = allNotifications.filter((item) => item.status === 'No Visa Data').length;
+
+    if (allNotifications.length === 0) {
+      message.info('No visa records available to export');
+      return;
+    }
+
+    const doc = new jsPDF('p', 'mm', 'a4');
+    doc.setFontSize(16);
+    doc.text('PATH TO SUCCESS CONSULTANTS', 14, 16);
+    doc.setFontSize(11);
+    doc.text('Digital Cupboard', 14, 23);
+    doc.setFontSize(12);
+    doc.text('Visa Expiry Notification Report', 14, 31);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 37);
+    doc.setFontSize(11);
+    doc.text('Summary', 14, 45);
+    doc.setFontSize(10);
+    doc.text(`Expired: ${expiredCount}`, 14, 51);
+    doc.text(`Expiring Soon (<=30 days): ${expiringSoonCount}`, 70, 51);
+    doc.text(`Valid: ${validCount}`, 132, 51);
+    doc.text(`No Visa Data: ${noVisaDataCount}`, 168, 51);
+
+    autoTable(doc, {
+      startY: 57,
+      head: [['Employee', 'Visa Type', 'Visa Period', 'Expires In', 'Status']],
+      body: allNotifications.map((item) => ([
+        item.employee || 'N/A',
+        item.visaType || 'N/A',
+        `${item.visaStartDate || 'N/A'} - ${item.expiryDate || 'N/A'}`,
+        item.expiresIn || 'N/A',
+        item.status || 'N/A',
+      ])),
+      styles: {
+        fontSize: 9,
+        cellPadding: 2.5,
+      },
+      headStyles: {
+        fillColor: [30, 64, 175],
+      },
+    });
+
+    doc.save(`visa-expiry-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   if (loading) {
     return (
       <Layout style={{ minHeight: '100vh' }}>
@@ -207,16 +253,31 @@ const App = () => {
     );
   }
 
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
-    <Layout style={{ minHeight: '100vh'}}>
-      
-      <Content style={{ margin: '24px', padding: '24px',  borderRadius: '8px',  }}>
-      <Title level={3} >Employee Dashboard</Title>
-        {/* Top Cards - Now Balanced */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
-          {/* Employees Card */}
-          <Col xs={24} sm={12} lg={8}>
+    <Layout className="dashboard-layout">
+      <Content className="dashboard-content">
+        <div className="dashboard-hero">
+          <div>
+            <Text className="dashboard-hero-label">Operations Overview</Text>
+            <Title level={2} className="dashboard-hero-title">Employee Dashboard</Title>
+            <Text className="dashboard-hero-subtitle">
+              Keep track of workforce status, visa compliance, and daily attendance in one place.
+            </Text>
+          </div>
+          <div className="dashboard-date-pill">{today}</div>
+        </div>
+
+        <Row gutter={[24, 24]} style={{ marginBottom: 24 }} className="dashboard-top-row">
+          <Col xs={24} sm={12} lg={8} className="dashboard-top-col">
             <Card 
+              className="dashboard-card"
               title={
                 <Space>
                   <TeamOutlined />
@@ -224,25 +285,26 @@ const App = () => {
                 </Space>
               } 
               bordered={false}
-              headStyle={{ borderBottom: '1px solid #f0f0f0', padding: '0 16px' }}
+              headStyle={{ borderBottom: '1px solid #eef2f7', padding: '0 16px' }}
               bodyStyle={{ padding: '16px' }}
             >
-              <Title level={2} style={{ fontSize: '36px', margin: '8px 0', color: '#1890ff' }}>
+              <Title level={2} className="dashboard-kpi-value">
                 {dashboardData.totalEmployees}
               </Title>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Total employees</Text>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                Total employees in the organization
+              </Text>
               {departmentData.length > 0 && <Bar {...barConfig} />}
             </Card>
           </Col>
 
-          {/* Time Tracking Card */}
-          <Col xs={24} sm={12} lg={8}>
+          <Col xs={24} sm={12} lg={8} className="dashboard-top-col">
             <ClockInWrapper />
           </Col>
 
-          {/* Visa Status Card */}
-          <Col xs={24} sm={24} lg={8}>
+          <Col xs={24} sm={24} lg={8} className="dashboard-top-col">
             <Card 
+              className="dashboard-card"
               title={
                 <Space>
                   <ExclamationCircleOutlined />
@@ -250,23 +312,23 @@ const App = () => {
                 </Space>
               } 
               bordered={false}
-              headStyle={{ borderBottom: '1px solid #f0f0f0', padding: '0 16px' }}
+              headStyle={{ borderBottom: '1px solid #eef2f7', padding: '0 16px' }}
               bodyStyle={{ padding: '16px' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div>
+              <div className="status-summary">
+                <div className="status-chip warning">
                   <Text type="secondary">Expiring Soon</Text>
                   <Title level={4} style={{ margin: '4px 0', color: '#faad14' }}>
                     {dashboardData.visaStatus.expiringSoon}
                   </Title>
                 </div>
-                <div>
+                <div className="status-chip danger">
                   <Text type="secondary">Expired</Text>
                   <Title level={4} style={{ margin: '4px 0', color: '#ff4d4f' }}>
                     {dashboardData.visaStatus.expired}
                   </Title>
                 </div>
-                <div>
+                <div className="status-chip success">
                   <Text type="secondary">Valid</Text>
                   <Title level={4} style={{ margin: '4px 0', color: '#52c41a' }}>
                     {dashboardData.visaStatus.valid}
@@ -308,12 +370,12 @@ const App = () => {
           </Col>
         </Row>
 
-        <Divider />
+        <Divider style={{ margin: '8px 0 20px' }} />
 
-        {/* Tables Section */}
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={12}>
             <Card 
+              className="dashboard-card dashboard-table-card"
               title={
                 <Space>
                   <UserOutlined />
@@ -321,21 +383,22 @@ const App = () => {
                 </Space>
               } 
               bordered={false}
-              headStyle={{ borderBottom: '1px solid #f0f0f0' }}
+              headStyle={{ borderBottom: '1px solid #eef2f7' }}
               extra={<Button type="link" onClick={() => navigate('/employee-management')}>View All</Button>}
             >
               <Table 
                 dataSource={dashboardData.recentEmployees || []} 
                 columns={employeeColumns} 
-                pagination={false} 
+                pagination={{ pageSize: 5, showSizeChanger: false }} 
                 size="middle"
-                style={{ borderRadius: '8px' }}
+                className="dashboard-table"
               />
             </Card>
           </Col>
 
           <Col xs={24} lg={12}>
             <Card 
+              className="dashboard-card dashboard-table-card"
               title={
                 <Space>
                   <ScheduleOutlined />
@@ -343,15 +406,20 @@ const App = () => {
                 </Space>
               } 
               bordered={false}
-              headStyle={{ borderBottom: '1px solid #f0f0f0' }}
-              extra={<Button type="link" onClick={() => navigate('/employee-management')}>View All</Button>}
+              headStyle={{ borderBottom: '1px solid #eef2f7' }}
+              extra={(
+                <Space>
+                  <Button onClick={exportExpiryNotificationsPdf}>Export PDF</Button>
+                  <Button type="link" onClick={() => navigate('/employee-management')}>View All</Button>
+                </Space>
+              )}
             >
               <Table 
                 dataSource={dashboardData.expiryNotifications || []} 
                 columns={notificationColumns} 
-                pagination={false} 
+                pagination={{ pageSize: 5, showSizeChanger: false }} 
                 size="middle"
-                style={{ borderRadius: '8px' }}
+                className="dashboard-table"
               />
             </Card>
           </Col>

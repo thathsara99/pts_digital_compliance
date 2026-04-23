@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import PageBanner from '../components/PageBanner';
 
 const { Option } = Select;
 
@@ -302,16 +303,16 @@ const UserManagementPage = () => {
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <h2>User Management</h2>
-        </Col>
-        <Col>
+      <PageBanner
+        label="Access Control"
+        title="User Management"
+        subtitle="Manage users, roles, departments, and account status."
+        actions={(
           <Button type="primary" icon={<PlusOutlined />} onClick={() => showDrawer()}>
             Add New User
           </Button>
-        </Col>
-      </Row>
+        )}
+      />
 
       {/* Filters */}
       <Row gutter={16} style={{ marginBottom: 16 }}>

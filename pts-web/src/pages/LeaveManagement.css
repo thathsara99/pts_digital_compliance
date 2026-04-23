@@ -1,0 +1,149 @@
+.leave-page {
+  background: transparent;
+}
+
+.leave-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #1f2937 0%, #1d4ed8 60%, #2563eb 100%);
+  box-shadow: 0 16px 32px rgba(30, 41, 59, 0.18);
+}
+
+.leave-hero-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.leave-hero-title.ant-typography {
+  color: #ffffff;
+  margin: 0 0 6px;
+}
+
+.leave-hero-subtitle.ant-typography {
+  max-width: 650px;
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.leave-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.leave-date-pill {
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-weight: 500;
+}
+
+.leave-apply-btn.ant-btn {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.leave-filter-card.ant-card,
+.leave-card.ant-card {
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.leave-filter-card {
+  margin-bottom: 20px;
+}
+
+.leave-filter-label.ant-typography {
+  color: #475569;
+  font-weight: 600;
+}
+
+.leave-summary-card .ant-card-head-title {
+  font-weight: 700;
+}
+
+.leave-pie-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.leave-empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+}
+
+.leave-metric-card.ant-card {
+  border-radius: 12px;
+  min-height: 112px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.leave-metric-card.primary {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.leave-metric-card.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.leave-metric-card.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.leave-metric-card.highlight {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.metric-label.ant-typography {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.metric-value.ant-typography {
+  margin: 6px 0 0;
+  color: #0f172a;
+}
+
+.leave-table .ant-table {
+  border-radius: 12px;
+}
+
+.leave-table .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+}
+
+.leave-table .ant-table-tbody > tr:hover > td {
+  background: #f1f5f9 !important;
+}
+
+@media (max-width: 768px) {
+  .leave-hero {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .leave-hero-actions {
+    align-items: flex-start;
+  }
+}
