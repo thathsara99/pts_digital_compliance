@@ -12,6 +12,10 @@ const documentController = require('../controllers/document');
 const leaveController = require('../controllers/leave');
 const attendanceController = require('../controllers/attendance');
 const taskController = require('../controllers/task');
+const supplierController = require('../controllers/supplier');
+const customerController = require('../controllers/customer');
+const customerContractController = require('../controllers/customerContract');
+const upcomingContractController = require('../controllers/upcomingContract');
 
 // Auth
 router.post('/login', authController.login);
@@ -91,5 +95,23 @@ router.put('/tasks/:id', authenticate, taskController.updateTask);
 router.patch('/tasks/:id/status', authenticate, taskController.updateTaskStatus);
 router.delete('/tasks/:id', authenticate, taskController.deleteTask);
 router.get('/tasks/:id/history', authenticate, taskController.getTaskHistory);
+
+// Supplier routes
+router.get('/suppliers', authenticate, supplierController.getSuppliers);
+router.post('/suppliers', authenticate, supplierController.createSupplier);
+router.put('/suppliers/:id', authenticate, supplierController.updateSupplier);
+router.delete('/suppliers/:id', authenticate, supplierController.deleteSupplier);
+
+// Customer routes
+router.get('/customers', authenticate, customerController.getCustomers);
+router.post('/customers', authenticate, customerController.createCustomer);
+router.put('/customers/:id', authenticate, customerController.updateCustomer);
+router.get('/customers/assignable-employees', authenticate, customerController.getAssignableEmployees);
+router.get('/customers/:customerId/contracts', authenticate, customerContractController.getCustomerContracts);
+router.post('/customers/:customerId/contracts', authenticate, customerContractController.uploadCustomerContracts);
+router.delete('/customers/:customerId/contracts/:id', authenticate, customerContractController.deleteCustomerContract);
+router.get('/upcoming-contracts', authenticate, upcomingContractController.getUpcomingContracts);
+router.post('/upcoming-contracts', authenticate, upcomingContractController.uploadUpcomingContracts);
+router.delete('/upcoming-contracts/:id', authenticate, upcomingContractController.deleteUpcomingContract);
 
 module.exports = router;

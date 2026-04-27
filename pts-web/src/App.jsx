@@ -15,6 +15,8 @@ import CompanyProfile from "./pages/CompanyProfile";
 import Attendance from "./pages/Attendance";
 import TaskManager from "./pages/TaskManager";
 import Menue from "./pages/Menue";
+import SupplierManagement from "./pages/SupplierManagement";
+import CustomerManagement from "./pages/CustomerManagement";
 import { isTokenValid, clearAuthToken } from "./utils/auth";
 
 function App() {
@@ -152,6 +154,22 @@ function App() {
         element={
           <MainLayout onLogout={handleLogout}>
             <TaskManager />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/suppliers"
+        element={
+          <MainLayout onLogout={handleLogout}>
+            <SupplierManagement />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/customers"
+        element={
+          <MainLayout onLogout={handleLogout}>
+            <CustomerManagement />
           </MainLayout>
         }
       />

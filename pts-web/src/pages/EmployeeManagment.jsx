@@ -354,31 +354,10 @@ const EmployeeManagementPage = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-
-    const pdfColumns = [
-      { key: 'email', title: 'Employee Email' },
-      { key: 'name', title: 'Name' },
-      { key: 'department', title: 'Department' },
-      { key: 'dateofBirth', title: 'Date of Birth' },
-      { key: 'employeeId', title: 'Employee ID' },
-      { key: 'emergencyContact', title: 'Emergency Contact' },
-      { key: 'niNumber', title: 'NI Number' },
-      { key: 'visaType', title: 'Visa Type' },
-      { key: 'eVisaShareCode', title: 'E-Visa Share Code' },
-      { key: 'visaStart', title: 'Visa Start' },
-      { key: 'visaEnd', title: 'Visa End' },
-      { key: 'bankName', title: 'Bank Name' },
-      { key: 'accountNumber', title: 'Account Number' },
-      { key: 'sortCode', title: 'Sort Code' },
-      { key: 'accountHolder', title: 'Account Holder' },
-      { key: 'nationality', title: 'Nationality' },
-      { key: 'status', title: 'Status' },
-      { key: 'hasPassportPhoto', title: 'Passport Photo' },
-      { key: 'hasEmploymentContract', title: 'Employment Contract' },
-      { key: 'hasRightToWorkDocument', title: 'Right To Work' },
-      { key: 'createdAt', title: 'Created' },
-      { key: 'updatedAt', title: 'Updated' }
-    ];
+    const companyName = 'PATH TO SUCCESS CONSULTANTS LTD';
+    const applicationName = 'Digital Cupboard';
+    const reportName = 'Employee Details Report';
+    const generatedOn = dayjs().format('DD/MM/YYYY HH:mm');
 
     const formatPdfValue = (key, value) => {
       if (value == null || value === '') return '—';
@@ -395,14 +374,70 @@ const EmployeeManagementPage = () => {
       return String(value);
     };
 
-    autoTable(doc, {
-      head: [pdfColumns.map((c) => c.title)],
-      body: filteredData.map((row) => pdfColumns.map((c) => formatPdfValue(c.key, row[c.key]))),
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [24, 144, 255] },
-      margin: { top: 12, left: 8, right: 8, bottom: 12 },
-      horizontalPageBreak: true
+    const drawPageHeader = () => {
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(companyName, 14, 14);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Application: ${applicationName}`, 14, 21);
+      doc.text(`Report Name: ${reportName}`, 14, 27);
+      doc.text(`Generated On: ${generatedOn}`, 14, 33);
+    };
+
+    if (!filteredData.length) {
+      drawPageHeader();
+      doc.setFontSize(11);
+      doc.text('No employee records available for the selected filters.', 14, 45);
+      doc.save('EmployeeDetails.pdf');
+      return;
+    }
+
+    filteredData.forEach((row, index) => {
+      if (index > 0) doc.addPage();
+      drawPageHeader();
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Employee ${index + 1} of ${filteredData.length}`, 14, 40);
+
+      autoTable(doc, {
+        startY: 44,
+        head: [['Field', 'Value']],
+        body: [
+          ['Employee Email', formatPdfValue('email', row.email)],
+          ['Name', formatPdfValue('name', row.name)],
+          ['Department', formatPdfValue('department', row.department)],
+          ['Date of Birth', formatPdfValue('dateofBirth', row.dateofBirth)],
+          ['Employee ID', formatPdfValue('employeeId', row.employeeId)],
+          ['Emergency Contact', formatPdfValue('emergencyContact', row.emergencyContact)],
+          ['NI Number', formatPdfValue('niNumber', row.niNumber)],
+          ['Visa Type', formatPdfValue('visaType', row.visaType)],
+          ['E-Visa Share Code', formatPdfValue('eVisaShareCode', row.eVisaShareCode)],
+          ['Visa Start', formatPdfValue('visaStart', row.visaStart)],
+          ['Visa End', formatPdfValue('visaEnd', row.visaEnd)],
+          ['Bank Name', formatPdfValue('bankName', row.bankName)],
+          ['Account Number', formatPdfValue('accountNumber', row.accountNumber)],
+          ['Sort Code', formatPdfValue('sortCode', row.sortCode)],
+          ['Account Holder', formatPdfValue('accountHolder', row.accountHolder)],
+          ['Nationality', formatPdfValue('nationality', row.nationality)],
+          ['Status', formatPdfValue('status', row.status)],
+          ['Passport Photo', formatPdfValue('hasPassportPhoto', row.hasPassportPhoto)],
+          ['Employment Contract', formatPdfValue('hasEmploymentContract', row.hasEmploymentContract)],
+          ['Right To Work', formatPdfValue('hasRightToWorkDocument', row.hasRightToWorkDocument)],
+          ['Created', formatPdfValue('createdAt', row.createdAt)],
+          ['Updated', formatPdfValue('updatedAt', row.updatedAt)]
+        ],
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [24, 144, 255], halign: 'left' },
+        columnStyles: {
+          0: { cellWidth: 60, fontStyle: 'bold' },
+          1: { cellWidth: 110 }
+        },
+        margin: { left: 14, right: 14, bottom: 12 },
+        rowPageBreak: 'avoid'
+      });
     });
+
     doc.save('EmployeeDetails.pdf');
   };
 

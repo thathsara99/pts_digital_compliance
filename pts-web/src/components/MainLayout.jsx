@@ -14,6 +14,7 @@ import {
   IdcardOutlined,
   ClockCircleOutlined,
   CheckSquareOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { ConfigProvider, theme } from "antd";
@@ -44,6 +45,7 @@ const MainLayout = ({ children, onLogout }) => {
   const isMobile = !screens.md;
   const currentRole = getCurrentUserRole();
   const canManageUsersAndDepartments = ['HR Manager', 'Super Admin', 'System Admin'].includes(currentRole);
+  const canAccessSuppliers = ['Super Admin', 'HR Admin', 'HR Manager', 'HR', 'System Admin', 'Company Admin'].includes(currentRole);
 
   // Function to fetch user profile data
   const fetchUserProfile = async () => {
@@ -210,6 +212,16 @@ const MainLayout = ({ children, onLogout }) => {
       label: <Link to="/tasks" onClick={() => setDrawerVisible(false)}>Task Manager</Link>,
       icon: <CheckSquareOutlined />
     },
+    ...(canAccessSuppliers ? [{
+      key: "9",
+      label: <Link to="/suppliers" onClick={() => setDrawerVisible(false)}>Supplier Management</Link>,
+      icon: <ShopOutlined />
+    }] : []),
+    {
+      key: "10",
+      label: <Link to="/customers" onClick={() => setDrawerVisible(false)}>{currentRole === 'Employee' ? 'My Customers' : 'Customer Management'}</Link>,
+      icon: <TeamOutlined />
+    },
   ];
 
   return (
@@ -259,7 +271,8 @@ const MainLayout = ({ children, onLogout }) => {
                   backgroundColor: 'transparent',
                   borderBottom: 'none',
                   lineHeight: '64px',
-                  width: '950px'
+                  flex: 1,
+                  minWidth: 0
                 }}
               />
             )}
