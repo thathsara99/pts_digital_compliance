@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Table, Button, Drawer, Form, Input, Select, DatePicker, Upload, message,
-  Space, Row, Col, Popconfirm, Tooltip, Typography
+  Space, Row, Col, Popconfirm, Tooltip, Typography, Switch, Tag
 } from 'antd';
 import {
   InboxOutlined, PlusOutlined, LeftOutlined, RightOutlined, EditOutlined, DeleteOutlined
@@ -38,6 +38,7 @@ const EmployeeManagementPage = () => {
   /** Blocks submit while image/FileReader processing is in flight (avoids saving null blobs). */
   const [uploadProcessingCount, setUploadProcessingCount] = useState(0);
   const uploadBusyRef = useRef(0);
+  const visaEndWatch = Form.useWatch('visaEnd', form);
   /** In-drawer previews for contract PDFs / images (mirrors saved data URLs). */
   const [docPreviews, setDocPreviews] = useState({
     employmentContract: null,
@@ -51,6 +52,7 @@ const EmployeeManagementPage = () => {
   });
   const currentRole = getCurrentUserRole();
   const canManageAllEmployees = ['HR Manager', 'Super Admin', 'HR', 'System Admin'].includes(currentRole);
+  const showVisaRenewalToggle = Boolean(visaEndWatch) && dayjs(visaEndWatch).endOf('day').isBefore(dayjs().startOf('day'));
 
   const beginUploadProcessing = () => {
     uploadBusyRef.current += 1;
@@ -122,6 +124,12 @@ const EmployeeManagementPage = () => {
     fetchEmployees();
     fetchAvailableUsers();
   }, []);
+
+  useEffect(() => {
+    if (!showVisaRenewalToggle) {
+      form.setFieldValue('visaRenewalRequested', false);
+    }
+  }, [form, showVisaRenewalToggle]);
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -305,6 +313,7 @@ const EmployeeManagementPage = () => {
         eVisaShareCode: values.eVisaShareCode,
         visaStartDate: values.visaStart.format('YYYY-MM-DD'),
         visaEndDate: values.visaEnd.format('YYYY-MM-DD'),
+        visaRenewalRequested: showVisaRenewalToggle ? Boolean(values.visaRenewalRequested) : false,
         bankName: values.bankName,
         accountNumber: values.accountNumber,
         sortCode: values.sortCode,
@@ -474,6 +483,7 @@ const EmployeeManagementPage = () => {
         eVisaShareCode: employee.eVisaShareCode,
         visaStart: employee.visaStartDate ? dayjs(employee.visaStartDate) : null,
         visaEnd: employee.visaEndDate ? dayjs(employee.visaEndDate) : null,
+        visaRenewalRequested: Boolean(employee.visaRenewalRequested),
         bankName: employee.bankName,
         accountNumber: employee.accountNumber,
         sortCode: employee.sortCode,
@@ -543,6 +553,12 @@ const EmployeeManagementPage = () => {
   const columns = [
     { title: 'Employee Email', dataIndex: 'email', key: 'email' },
     { title: 'Employee ID', dataIndex: 'employeeId', key: 'employeeId' },
+    {
+      title: 'Visa Renewal',
+      dataIndex: 'visaRenewalRequested',
+      key: 'visaRenewalRequested',
+      render: (value) => value ? <Tag color="processing">Pending</Tag> : <Tag>Not Requested</Tag>
+    },
     { title: 'NI Number', dataIndex: 'niNumber', key: 'niNumber' },
     { title: 'Bank Name', dataIndex: 'bankName', key: 'bankName' },
     {
@@ -758,6 +774,16 @@ const EmployeeManagementPage = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          {showVisaRenewalToggle && (
+            <Form.Item
+              name="visaRenewalRequested"
+              label="New Visa Renewal Requested From Home Office"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="Requested" unCheckedChildren="Not Requested" />
+            </Form.Item>
+          )}
 
           <Form.Item name="bankName" label="Bank Name" rules={[{ required: true, message: 'Please enter bank name' }]}>
             <Input />

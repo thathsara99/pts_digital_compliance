@@ -36,10 +36,11 @@ const { Title, Text } = Typography;
 const App = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [hasLoadedDashboard, setHasLoadedDashboard] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     totalEmployees: 0,
     departmentData: [],
-    visaStatus: { expired: 0, expiringSoon: 0, valid: 0 },
+    visaStatus: { expired: 0, expiringSoon: 0, valid: 0, pending: 0 },
     expiryNotifications: [],
     recentEmployees: []
   });
@@ -112,6 +113,8 @@ const App = () => {
           status={
             status === 'Expiring Soon'
               ? 'warning'
+              : status === 'Pending'
+                ? 'processing'
               : status === 'Valid'
                 ? 'success'
                 : 'error'
@@ -128,32 +131,35 @@ const App = () => {
   }, []);
 
   const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get('/employees/dashboard-stats');
-      if (response.data.success) {
-        setDashboardData(response.data.data);
-      }
-    } catch (error) {
-      // Retry once for transient network/timeouts on hard refresh.
+    if (!hasLoadedDashboard) setLoading(true);
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        const retryResponse = await apiClient.get('/employees/dashboard-stats');
-        if (retryResponse.data.success) {
-          setDashboardData(retryResponse.data.data);
+        const response = await apiClient.get('/employees/dashboard-stats', { timeout: 30000 });
+        if (response?.data?.success) {
+          setDashboardData(response.data.data);
+          setHasLoadedDashboard(true);
+          setLoading(false);
           return;
         }
-      } catch (retryError) {
-        console.error('Error fetching dashboard data:', retryError);
-        const errorMessage = retryError.response?.data?.message || 'Failed to load dashboard data';
-        message.error(errorMessage);
+        lastError = new Error('Invalid dashboard response');
+      } catch (error) {
+        lastError = error;
       }
-    } finally {
+    }
+
+    console.error('Error fetching dashboard data:', lastError);
+    if (!hasLoadedDashboard) {
+      const errorMessage = lastError?.response?.data?.message || 'Failed to load dashboard data';
+      message.error(errorMessage);
       setLoading(false);
     }
   };
 
   // Prepare chart data
   const visaStatusData = [
+    { type: 'Pending', value: dashboardData.visaStatus.pending || 0 },
     { type: 'Expired', value: dashboardData.visaStatus.expired },
     { type: 'Expiring Soon', value: dashboardData.visaStatus.expiringSoon },
     { type: 'Valid', value: dashboardData.visaStatus.valid },
@@ -193,6 +199,7 @@ const App = () => {
   const exportExpiryNotificationsPdf = () => {
     const allNotifications = dashboardData.expiryNotifications || [];
     const expiredCount = allNotifications.filter((item) => item.status === 'Expired').length;
+    const pendingCount = allNotifications.filter((item) => item.status === 'Pending').length;
     const expiringSoonCount = allNotifications.filter((item) => item.status === 'Expiring Soon').length;
     const validCount = allNotifications.filter((item) => item.status === 'Valid').length;
     const noVisaDataCount = allNotifications.filter((item) => item.status === 'No Visa Data').length;
@@ -215,12 +222,13 @@ const App = () => {
     doc.text('Summary', 14, 45);
     doc.setFontSize(10);
     doc.text(`Expired: ${expiredCount}`, 14, 51);
-    doc.text(`Expiring Soon (<=30 days): ${expiringSoonCount}`, 70, 51);
-    doc.text(`Valid: ${validCount}`, 132, 51);
-    doc.text(`No Visa Data: ${noVisaDataCount}`, 168, 51);
+    doc.text(`Pending: ${pendingCount}`, 50, 51);
+    doc.text(`Expiring Soon (<=30 days): ${expiringSoonCount}`, 14, 57);
+    doc.text(`Valid: ${validCount}`, 110, 57);
+    doc.text(`No Visa Data: ${noVisaDataCount}`, 150, 57);
 
     autoTable(doc, {
-      startY: 57,
+      startY: 63,
       head: [['Employee', 'Visa Type', 'Visa Period', 'Expires In', 'Status']],
       body: allNotifications.map((item) => ([
         item.employee || 'N/A',
@@ -328,6 +336,12 @@ const App = () => {
                     {dashboardData.visaStatus.expired}
                   </Title>
                 </div>
+                <div className="status-chip">
+                  <Text type="secondary">Pending</Text>
+                  <Title level={4} style={{ margin: '4px 0', color: '#1677ff' }}>
+                    {dashboardData.visaStatus.pending || 0}
+                  </Title>
+                </div>
                 <div className="status-chip success">
                   <Text type="secondary">Valid</Text>
                   <Title level={4} style={{ margin: '4px 0', color: '#52c41a' }}>
@@ -353,7 +367,7 @@ const App = () => {
                   legend={{ position: "bottom" }}
                   tooltip={{ showMarkers: true }}
                   interactions={[{ type: "element-active" }]}
-                  color={['#ff4d4f', '#faad14', '#52c41a']}
+                  color={['#1677ff', '#ff4d4f', '#faad14', '#52c41a']}
                   height={180}
                   statistic={{
                     content: {

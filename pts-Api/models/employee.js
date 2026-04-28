@@ -52,6 +52,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: false
     },
+    visaRenewalRequested: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     bankName: {
       type: DataTypes.STRING,
       allowNull: false

@@ -5,6 +5,14 @@ const sequelize = require('../config/db');
 
 const PRIVILEGED_ROLES = new Set(['HR Manager', 'Super Admin', 'HR', 'System Admin']);
 const isPrivilegedRole = (role) => PRIVILEGED_ROLES.has(role);
+const isDateExpired = (dateValue) => {
+  if (!dateValue) return false;
+  const end = new Date(dateValue);
+  const today = new Date();
+  end.setHours(23, 59, 59, 999);
+  today.setHours(0, 0, 0, 0);
+  return end < today;
+};
 
 /** Validate and normalize base64 data-URL strings coming from the client */
 const normalizeDataUrlString = (val) => {
@@ -98,6 +106,7 @@ const getAllEmployees = async (req, res) => {
       eVisaShareCode: emp.eVisaShareCode,
       visaStart: emp.visaStartDate ? emp.visaStartDate.toLocaleDateString('en-GB') : '',
       visaEnd: emp.visaEndDate ? emp.visaEndDate.toLocaleDateString('en-GB') : '',
+      visaRenewalRequested: Boolean(emp.visaRenewalRequested),
       bankName: emp.bankName,
       accountNumber: emp.accountNumber,
       sortCode: emp.sortCode,
@@ -212,6 +221,7 @@ const createEmployee = async (req, res) => {
       accountNumber,
       sortCode,
       accountHolder,
+      visaRenewalRequested: isDateExpired(visaEndDate) ? Boolean(req.body.visaRenewalRequested) : false,
       passportPhoto: req.body.passportPhoto ?? null,
       employmentContract: req.body.employmentContract ?? null,
       rightToWorkDocument: req.body.rightToWorkDocument ?? null
@@ -272,6 +282,13 @@ const updateEmployee = async (req, res) => {
       if (existingNI) {
         return res.status(400).json({ message: 'NI Number already exists' });
       }
+    }
+
+    const effectiveVisaEndDate = updates.visaEndDate ?? employee.visaEndDate;
+    if (!isDateExpired(effectiveVisaEndDate)) {
+      updates.visaRenewalRequested = false;
+    } else if ('visaRenewalRequested' in updates) {
+      updates.visaRenewalRequested = Boolean(updates.visaRenewalRequested);
     }
 
     await Employee.update(updates, { where: { id } });
@@ -460,6 +477,7 @@ const getDashboardStats = async (req, res) => {
     let expiredCount = 0;
     let expiringSoonCount = 0;
     let validCount = 0;
+    let pendingCount = 0;
     const expiryNotifications = [];
 
     employees.forEach(emp => {
@@ -480,10 +498,26 @@ const getDashboardStats = async (req, res) => {
       }
 
       const visaEndDate = new Date(emp.visaEndDate);
-      const daysUntilExpiry = Math.ceil((visaEndDate - today) / (1000 * 60 * 60 * 24));
+      const todayStart = new Date(today);
+      const visaEndDay = new Date(visaEndDate);
+      todayStart.setHours(0, 0, 0, 0);
+      visaEndDay.setHours(0, 0, 0, 0);
+      const daysUntilExpiry = Math.ceil((visaEndDay - todayStart) / (1000 * 60 * 60 * 24));
       const formattedExpiryDate = visaEndDate.toLocaleDateString('en-GB');
+      const renewalRequested = Boolean(emp.visaRenewalRequested);
 
-      if (visaEndDate < today) {
+      if (isDateExpired(visaEndDate) && renewalRequested) {
+        pendingCount++;
+        expiryNotifications.push({
+          key: `emp-${emp.id}`,
+          employee: employeeName,
+          visaType: emp.visaType || 'N/A',
+          expiresIn: 'Pending',
+          visaStartDate: formattedVisaStartDate,
+          expiryDate: 'Pending',
+          status: 'Pending'
+        });
+      } else if (isDateExpired(visaEndDate)) {
         expiredCount++;
         expiryNotifications.push({
           key: `emp-${emp.id}`,
@@ -521,7 +555,7 @@ const getDashboardStats = async (req, res) => {
 
     // Sort notifications by priority (expired, expiring soon, valid) then by days
     expiryNotifications.sort((a, b) => {
-      const statusPriority = { Expired: 0, 'Expiring Soon': 1, Valid: 2, 'No Visa Data': 3 };
+      const statusPriority = { Expired: 0, Pending: 1, 'Expiring Soon': 2, Valid: 3, 'No Visa Data': 4 };
       const aPriority = statusPriority[a.status] ?? 99;
       const bPriority = statusPriority[b.status] ?? 99;
       if (aPriority !== bPriority) return aPriority - bPriority;
@@ -548,7 +582,8 @@ const getDashboardStats = async (req, res) => {
         visaStatus: {
           expired: expiredCount,
           expiringSoon: expiringSoonCount,
-          valid: validCount
+          valid: validCount,
+          pending: pendingCount
         },
         expiryNotifications,
         recentEmployees
