@@ -32,10 +32,10 @@ const createCustomer = async (req, res) => {
   try {
     const customer = await Customer.create({
       customerName: req.body.customerName,
-      email: req.body.email,
-      contactNumber: req.body.contactNumber,
-      address: req.body.address,
-      industry: req.body.industry,
+      email: req.body.email || '',
+      contactNumber: req.body.contactNumber || '',
+      address: req.body.address || '',
+      industry: req.body.industry || '',
       assignedEmployeeId: req.body.assignedEmployeeId || null,
       status: req.body.status || 'Active'
     });

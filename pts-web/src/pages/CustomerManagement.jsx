@@ -85,7 +85,6 @@ const CustomerManagement = () => {
     setEditingCustomer(record);
     form.setFieldsValue({
       customerName: record.customerName,
-      email: record.email,
       contactNumber: record.contactNumber,
       address: record.address,
       industry: record.industry,
@@ -375,10 +374,9 @@ const CustomerManagement = () => {
     doc.text(`Generated On: ${generatedOn}`, 14, 33);
 
     autoTable(doc, {
-      head: [['Customer Name', 'Email', 'Contact Number', 'Industry', 'Status', 'Assigned Employee']],
+      head: [['Customer Name', 'Contact Number', 'Industry', 'Status', 'Assigned Employee']],
       body: customers.map((customer) => [
         customer.customerName || '—',
-        customer.email || '—',
         customer.contactNumber || '—',
         customer.industry || '—',
         customer.status || '—',
@@ -395,7 +393,6 @@ const CustomerManagement = () => {
 
   const columns = [
     { title: 'Customer Name', dataIndex: 'customerName' },
-    { title: 'Email', dataIndex: 'email' },
     { title: 'Contact Number', dataIndex: 'contactNumber' },
     { title: 'Industry', dataIndex: 'industry' },
     { title: 'Status', dataIndex: 'status' },
@@ -481,10 +478,7 @@ const CustomerManagement = () => {
               <Form.Item name="customerName" label="Customer Name" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                <Input />
-              </Form.Item>
-              <Form.Item name="contactNumber" label="Contact Number" rules={[{ required: true }]}>
+              <Form.Item name="contactNumber" label="Contact Number">
                 <Input />
               </Form.Item>
               <Form.Item name="address" label="Address">

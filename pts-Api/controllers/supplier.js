@@ -104,12 +104,12 @@ const createSupplier = async (req, res) => {
 
     const supplier = await Supplier.create({
       supplierName: req.body.supplierName,
-      contactPerson: req.body.contactPerson,
-      email: req.body.email,
-      contactNumber: req.body.contactNumber,
-      departmentName: req.body.departmentName,
-      address: req.body.address,
-      notes: req.body.notes,
+      contactPerson: req.body.contactPerson || '',
+      email: req.body.email || '',
+      contactNumber: req.body.contactNumber || '',
+      departmentName: req.body.departmentName || '',
+      address: req.body.address || '',
+      notes: req.body.notes || '',
       status: req.body.status || 'Active',
       supportingDocument: JSON.stringify(value)
     });

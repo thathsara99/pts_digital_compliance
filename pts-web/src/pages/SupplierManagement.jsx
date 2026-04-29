@@ -117,7 +117,6 @@ const SupplierManagement = () => {
     form.setFieldsValue({
       supplierName: record.supplierName,
       contactPerson: record.contactPerson,
-      email: record.email,
       contactNumber: record.contactNumber,
       departmentName: record.departmentName,
       address: record.address,
@@ -165,11 +164,10 @@ const SupplierManagement = () => {
   };
 
   const exportCsv = () => {
-    const headers = ['Supplier Name', 'Contact Person', 'Email', 'Contact Number', 'Department', 'Address', 'Notes', 'Status'];
+    const headers = ['Supplier Name', 'Contact Person', 'Contact Number', 'Department', 'Address', 'Notes', 'Status'];
     const rows = suppliers.map((s) => [
       s.supplierName,
       s.contactPerson,
-      s.email,
       s.contactNumber,
       s.departmentName,
       s.address || '',
@@ -204,8 +202,8 @@ const SupplierManagement = () => {
     doc.text(`Generated On: ${generatedOn}`, 14, 33);
 
     autoTable(doc, {
-      head: [['Supplier Name', 'Contact Person', 'Email', 'Contact Number', 'Department', 'Status']],
-      body: suppliers.map((s) => [s.supplierName, s.contactPerson, s.email, s.contactNumber, s.departmentName, s.status]),
+      head: [['Supplier Name', 'Contact Person', 'Contact Number', 'Department', 'Status']],
+      body: suppliers.map((s) => [s.supplierName, s.contactPerson, s.contactNumber, s.departmentName, s.status]),
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [24, 144, 255] },
       margin: { top: 40, left: 10, right: 10, bottom: 12 },
@@ -226,7 +224,6 @@ const SupplierManagement = () => {
   const columns = [
     { title: 'Supplier Name', dataIndex: 'supplierName' },
     { title: 'Contact Person', dataIndex: 'contactPerson' },
-    { title: 'Email', dataIndex: 'email' },
     { title: 'Contact Number', dataIndex: 'contactNumber' },
     { title: 'Department', dataIndex: 'departmentName' },
     { title: 'Status', dataIndex: 'status' },
@@ -296,16 +293,13 @@ const SupplierManagement = () => {
           <Form.Item name="supplierName" label="Supplier Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="contactPerson" label="Contact Person" rules={[{ required: true }]}>
+          <Form.Item name="contactPerson" label="Contact Person">
             <Input />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+          <Form.Item name="contactNumber" label="Contact Number">
             <Input />
           </Form.Item>
-          <Form.Item name="contactNumber" label="Contact Number" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="departmentName" label="Department" rules={[{ required: true, message: 'Please select a department' }]}>
+          <Form.Item name="departmentName" label="Department">
             <Select
               showSearch
               placeholder="Select department"
