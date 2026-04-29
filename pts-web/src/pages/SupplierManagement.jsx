@@ -222,11 +222,32 @@ const SupplierManagement = () => {
   }
 
   const columns = [
-    { title: 'Supplier Name', dataIndex: 'supplierName' },
-    { title: 'Contact Person', dataIndex: 'contactPerson' },
-    { title: 'Contact Number', dataIndex: 'contactNumber' },
-    { title: 'Department', dataIndex: 'departmentName' },
-    { title: 'Status', dataIndex: 'status' },
+    {
+      title: 'Supplier Name',
+      dataIndex: 'supplierName',
+      sorter: (a, b) => (a.supplierName || '').localeCompare(b.supplierName || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Contact Person',
+      dataIndex: 'contactPerson',
+      sorter: (a, b) => (a.contactPerson || '').localeCompare(b.contactPerson || '')
+    },
+    {
+      title: 'Contact Number',
+      dataIndex: 'contactNumber',
+      sorter: (a, b) => (a.contactNumber || '').localeCompare(b.contactNumber || '')
+    },
+    {
+      title: 'Department',
+      dataIndex: 'departmentName',
+      sorter: (a, b) => (a.departmentName || '').localeCompare(b.departmentName || '')
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      sorter: (a, b) => (a.status || '').localeCompare(b.status || '')
+    },
     {
       title: 'Supporting Documents',
       render: (_, record) => {

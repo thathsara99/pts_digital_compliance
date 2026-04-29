@@ -551,16 +551,37 @@ const EmployeeManagementPage = () => {
   };
 
   const columns = [
-    { title: 'Employee Email', dataIndex: 'email', key: 'email' },
-    { title: 'Employee ID', dataIndex: 'employeeId', key: 'employeeId' },
+    {
+      title: 'Employee Email',
+      dataIndex: 'email',
+      key: 'email',
+      sorter: (a, b) => (a.email || '').localeCompare(b.email || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Employee ID',
+      dataIndex: 'employeeId',
+      key: 'employeeId',
+      sorter: (a, b) => (a.employeeId || '').localeCompare(b.employeeId || '')
+    },
     {
       title: 'Visa Renewal',
       dataIndex: 'visaRenewalRequested',
       key: 'visaRenewalRequested',
       render: (value) => value ? <Tag color="processing">Pending</Tag> : <Tag>Not Requested</Tag>
     },
-    { title: 'NI Number', dataIndex: 'niNumber', key: 'niNumber' },
-    { title: 'Bank Name', dataIndex: 'bankName', key: 'bankName' },
+    {
+      title: 'NI Number',
+      dataIndex: 'niNumber',
+      key: 'niNumber',
+      sorter: (a, b) => (a.niNumber || '').localeCompare(b.niNumber || '')
+    },
+    {
+      title: 'Bank Name',
+      dataIndex: 'bankName',
+      key: 'bankName',
+      sorter: (a, b) => (a.bankName || '').localeCompare(b.bankName || '')
+    },
     {
       title: 'Documents',
       key: 'documents',
@@ -583,12 +604,14 @@ const EmployeeManagementPage = () => {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      sorter: (a, b) => dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf(),
       render: (v) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—')
     },
     {
       title: 'Updated',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      sorter: (a, b) => dayjs(a.updatedAt).valueOf() - dayjs(b.updatedAt).valueOf(),
       render: (v) => (v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '—')
     },
     {

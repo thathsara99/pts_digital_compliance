@@ -70,6 +70,7 @@ const DocumentHub = () => {
     'References',
     'Offer Letter',
     'Contracts',
+    'Health Assesments',
     'Supporting Docs',
     'Other',
   ];
@@ -305,9 +306,25 @@ const DocumentHub = () => {
   });
 
   const columns = [
-    { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
-    { title: 'Employee Email', dataIndex: 'employeeEmail', key: 'employeeEmail' },
-    { title: 'Document Type', dataIndex: 'documentType', key: 'documentType' },
+    {
+      title: 'File Name',
+      dataIndex: 'fileName',
+      key: 'fileName',
+      sorter: (a, b) => (a.fileName || '').localeCompare(b.fileName || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Employee Email',
+      dataIndex: 'employeeEmail',
+      key: 'employeeEmail',
+      sorter: (a, b) => (a.employeeEmail || '').localeCompare(b.employeeEmail || '')
+    },
+    {
+      title: 'Document Type',
+      dataIndex: 'documentType',
+      key: 'documentType',
+      sorter: (a, b) => (a.documentType || '').localeCompare(b.documentType || '')
+    },
     {
       title: 'Action',
       key: 'action',
@@ -324,9 +341,25 @@ const DocumentHub = () => {
   ];
 
   const newApplicantColumns = [
-    { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
-    { title: 'Applicant Name', dataIndex: 'applicantName', key: 'applicantName' },
-    { title: 'Document Type', dataIndex: 'documentType', key: 'documentType' },
+    {
+      title: 'File Name',
+      dataIndex: 'fileName',
+      key: 'fileName',
+      sorter: (a, b) => (a.fileName || '').localeCompare(b.fileName || '')
+    },
+    {
+      title: 'Applicant Name',
+      dataIndex: 'applicantName',
+      key: 'applicantName',
+      sorter: (a, b) => (a.applicantName || '').localeCompare(b.applicantName || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Document Type',
+      dataIndex: 'documentType',
+      key: 'documentType',
+      sorter: (a, b) => (a.documentType || '').localeCompare(b.documentType || '')
+    },
     {
       title: 'Action',
       key: 'action',

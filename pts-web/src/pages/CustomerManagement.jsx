@@ -392,12 +392,34 @@ const CustomerManagement = () => {
   };
 
   const columns = [
-    { title: 'Customer Name', dataIndex: 'customerName' },
-    { title: 'Contact Number', dataIndex: 'contactNumber' },
-    { title: 'Industry', dataIndex: 'industry' },
-    { title: 'Status', dataIndex: 'status' },
+    {
+      title: 'Customer Name',
+      dataIndex: 'customerName',
+      sorter: (a, b) => (a.customerName || '').localeCompare(b.customerName || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Contact Number',
+      dataIndex: 'contactNumber',
+      sorter: (a, b) => (a.contactNumber || '').localeCompare(b.contactNumber || '')
+    },
+    {
+      title: 'Industry',
+      dataIndex: 'industry',
+      sorter: (a, b) => (a.industry || '').localeCompare(b.industry || '')
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      sorter: (a, b) => (a.status || '').localeCompare(b.status || '')
+    },
     {
       title: 'Assigned Employee',
+      sorter: (a, b) => {
+        const aName = a.assignedEmployee ? `${a.assignedEmployee.firstName} ${a.assignedEmployee.lastName}` : '';
+        const bName = b.assignedEmployee ? `${b.assignedEmployee.firstName} ${b.assignedEmployee.lastName}` : '';
+        return aName.localeCompare(bName);
+      },
       render: (_, record) => {
         const employee = record.assignedEmployee;
         return employee ? `${employee.firstName} ${employee.lastName}` : 'Unassigned';
@@ -552,10 +574,16 @@ const CustomerManagement = () => {
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`
               }}
               columns={[
-                { title: 'File Name', dataIndex: 'fileName' },
+                {
+                  title: 'File Name',
+                  dataIndex: 'fileName',
+                  sorter: (a, b) => (a.fileName || '').localeCompare(b.fileName || ''),
+                  defaultSortOrder: 'ascend'
+                },
                 {
                   title: 'Uploaded On',
                   dataIndex: 'createdAt',
+                  sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
                   render: (value) => (value ? new Date(value).toLocaleString() : '—')
                 },
                 {
@@ -624,10 +652,16 @@ const CustomerManagement = () => {
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`
               }}
               columns={[
-                { title: 'File Name', dataIndex: 'fileName' },
+                {
+                  title: 'File Name',
+                  dataIndex: 'fileName',
+                  sorter: (a, b) => (a.fileName || '').localeCompare(b.fileName || ''),
+                  defaultSortOrder: 'ascend'
+                },
                 {
                   title: 'Uploaded On',
                   dataIndex: 'createdAt',
+                  sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
                   render: (value) => (value ? new Date(value).toLocaleString() : '—')
                 },
                 {

@@ -243,26 +243,32 @@ const UserManagementPage = () => {
       title: 'First Name',
       dataIndex: 'firstName',
       key: 'firstName',
+      sorter: (a, b) => (a.firstName || '').localeCompare(b.firstName || ''),
+      defaultSortOrder: 'ascend'
     },
     {
       title: 'Last Name',
       dataIndex: 'lastName',
       key: 'lastName',
+      sorter: (a, b) => (a.lastName || '').localeCompare(b.lastName || '')
     },
     {
       title: 'Username',
       dataIndex: 'username',
       key: 'username',
+      sorter: (a, b) => (a.username || '').localeCompare(b.username || '')
     },
     {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
+      sorter: (a, b) => (a.role || '').localeCompare(b.role || '')
     },
     {
       title: 'Department',
       dataIndex: 'department',
       key: 'department',
+      sorter: (a, b) => (a.department || '').localeCompare(b.department || '')
     },
     {
       title: 'Status',

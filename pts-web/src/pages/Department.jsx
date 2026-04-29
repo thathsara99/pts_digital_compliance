@@ -48,12 +48,14 @@ const DepartmentsPage = () => {
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || 'Failed to fetch departments');
       setData(
-        result.data.map((d) => ({
-          key: d.id,
-          name: d.name,
-          description: d.description,
-          active: d.status,
-        }))
+        result.data
+          .map((d) => ({
+            key: d.id,
+            name: d.name,
+            description: d.description,
+            active: d.status,
+          }))
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       );
     } catch (err) {
       setError(err.message);
@@ -167,11 +169,14 @@ const DepartmentsPage = () => {
       title: 'Department Name',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
+      defaultSortOrder: 'ascend'
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '')
     },
     {
       title: 'Status',

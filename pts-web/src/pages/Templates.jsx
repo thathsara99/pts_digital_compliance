@@ -57,7 +57,11 @@ const TemplatesPage = () => {
   const onFinish = (values) => {
     if (editingId) {
       // Update existing record
-      setData(data.map(item => item.key === editingId ? { ...values, key: editingId } : item));
+      setData(
+        data
+          .map(item => item.key === editingId ? { ...values, key: editingId } : item)
+          .sort((a, b) => (a.templateName || '').localeCompare(b.templateName || ''))
+      );
       message.success('Template updated successfully');
     } else {
       // Add new record
@@ -65,7 +69,9 @@ const TemplatesPage = () => {
         ...values,
         key: Date.now().toString(),
       };
-      setData([...data, newRecord]);
+      setData(
+        [...data, newRecord].sort((a, b) => (a.templateName || '').localeCompare(b.templateName || ''))
+      );
       message.success('Template added successfully');
     }
     setVisible(false);
@@ -81,11 +87,14 @@ const TemplatesPage = () => {
       title: 'Template Name',
       dataIndex: 'templateName',
       key: 'templateName',
+      sorter: (a, b) => (a.templateName || '').localeCompare(b.templateName || ''),
+      defaultSortOrder: 'ascend'
     },
     {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
+      sorter: (a, b) => (a.type || '').localeCompare(b.type || '')
     },
     {
       title: 'Action',

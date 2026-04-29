@@ -50,11 +50,14 @@ const App = () => {
     { 
       title: 'Name', 
       dataIndex: 'name',
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
+      defaultSortOrder: 'ascend',
       render: (text) => <Text strong>{text}</Text>
     },
     { 
       title: 'Department', 
       dataIndex: 'department',
+      sorter: (a, b) => (a.department || '').localeCompare(b.department || ''),
       render: (text) => <Text type="secondary">{text || 'Unassigned'}</Text>
     },
     {
@@ -88,11 +91,14 @@ const App = () => {
     { 
       title: 'Employee', 
       dataIndex: 'employee',
+      sorter: (a, b) => (a.employee || '').localeCompare(b.employee || ''),
+      defaultSortOrder: 'ascend',
       render: (text) => <Text strong>{text}</Text>
     },
     { 
       title: 'Visa Type', 
       dataIndex: 'visaType',
+      sorter: (a, b) => (a.visaType || '').localeCompare(b.visaType || ''),
       render: (text) => <Text type="secondary">{text}</Text>
     },
     { 

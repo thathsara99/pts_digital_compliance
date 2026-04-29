@@ -216,6 +216,12 @@ const AttendanceHistory = () => {
       title: 'Employee',
       dataIndex: ['employee', 'firstName'],
       key: 'employee',
+      sorter: (a, b) => {
+        const aName = a.employee ? `${a.employee.firstName} ${a.employee.lastName}` : '';
+        const bName = b.employee ? `${b.employee.firstName} ${b.employee.lastName}` : '';
+        return aName.localeCompare(bName);
+      },
+      defaultSortOrder: 'ascend',
       render: (_, record) => (
         <Text strong>{record.employee ? `${record.employee.firstName} ${record.employee.lastName}` : '-'}</Text>
       )
@@ -272,6 +278,7 @@ const AttendanceHistory = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
       render: (status) => (
         <Tag color={getStatusColor(status)}>
           {status}

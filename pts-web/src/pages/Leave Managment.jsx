@@ -250,16 +250,48 @@ const LeaveManagementPage = () => {
   ];
 
   const columns = [
-    { title: 'Employee', dataIndex: 'employee', key: 'employee' },
-    { title: 'Leave Type', dataIndex: 'leaveType', key: 'leaveType' },
-    { title: 'Start Date', dataIndex: 'startDate', key: 'startDate' },
-    { title: 'End Date', dataIndex: 'endDate', key: 'endDate' },
-    { title: 'Total Days', dataIndex: 'totalDays', key: 'totalDays' },
-    { title: 'Comment', dataIndex: 'comment', key: 'comment' },
+    {
+      title: 'Employee',
+      dataIndex: 'employee',
+      key: 'employee',
+      sorter: (a, b) => (a.employee || '').localeCompare(b.employee || ''),
+      defaultSortOrder: 'ascend'
+    },
+    {
+      title: 'Leave Type',
+      dataIndex: 'leaveType',
+      key: 'leaveType',
+      sorter: (a, b) => (a.leaveType || '').localeCompare(b.leaveType || '')
+    },
+    {
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      sorter: (a, b) => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf()
+    },
+    {
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      sorter: (a, b) => dayjs(a.endDate).valueOf() - dayjs(b.endDate).valueOf()
+    },
+    {
+      title: 'Total Days',
+      dataIndex: 'totalDays',
+      key: 'totalDays',
+      sorter: (a, b) => (Number(a.totalDays) || 0) - (Number(b.totalDays) || 0)
+    },
+    {
+      title: 'Comment',
+      dataIndex: 'comment',
+      key: 'comment',
+      sorter: (a, b) => (a.comment || '').localeCompare(b.comment || '')
+    },
     { 
       title: 'Status', 
       dataIndex: 'status', 
       key: 'status',
+      sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
       render: (status) => getStatusTag(status)
     },
     {
