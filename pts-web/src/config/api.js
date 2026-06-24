@@ -2,7 +2,7 @@
 
 // API Configuration
 const envApiBase = process.env.REACT_APP_API_BASE;
-export const API_BASE_URL = (envApiBase && envApiBase.trim()) || 'http://82.165.218.214:5000/api';
+export const API_BASE_URL = (envApiBase && envApiBase.trim()) || 'http://localhost:5000/api';
 
 // Axios instance with default configuration
 import axios from 'axios';

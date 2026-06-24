@@ -19,6 +19,8 @@ import background from '../assets/forgotpw.jpg';
 const { Title, Text, Link } = Typography;
 const { Content } = Layout;
 
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+
 const ResetPasswordPage = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ const ResetPasswordPage = () => {
 
     try {
       // First, get the reset token
-      const tokenResponse = await fetch(`${process.env.REACT_APP_API_BASE}/forgot-password`, {
+      const tokenResponse = await fetch(`${API_BASE}/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +51,7 @@ const ResetPasswordPage = () => {
       }
 
       // Then immediately reset the password with the token
-              const resetResponse = await fetch(`${process.env.REACT_APP_API_BASE}/reset-password`, {
+      const resetResponse = await fetch(`${API_BASE}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

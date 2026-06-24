@@ -15,6 +15,7 @@ const taskController = require('../controllers/task');
 const supplierController = require('../controllers/supplier');
 const customerController = require('../controllers/customer');
 const customerContractController = require('../controllers/customerContract');
+const customerInvoiceController = require('../controllers/customerInvoice');
 const upcomingContractController = require('../controllers/upcomingContract');
 
 // Auth
@@ -110,6 +111,9 @@ router.get('/customers/assignable-employees', authenticate, customerController.g
 router.get('/customers/:customerId/contracts', authenticate, customerContractController.getCustomerContracts);
 router.post('/customers/:customerId/contracts', authenticate, customerContractController.uploadCustomerContracts);
 router.delete('/customers/:customerId/contracts/:id', authenticate, customerContractController.deleteCustomerContract);
+router.get('/customers/:customerId/invoices', authenticate, customerInvoiceController.getCustomerInvoices);
+router.post('/customers/:customerId/invoices', authenticate, customerInvoiceController.uploadCustomerInvoices);
+router.delete('/customers/:customerId/invoices/:id', authenticate, customerInvoiceController.deleteCustomerInvoice);
 router.get('/upcoming-contracts', authenticate, upcomingContractController.getUpcomingContracts);
 router.post('/upcoming-contracts', authenticate, upcomingContractController.uploadUpcomingContracts);
 router.delete('/upcoming-contracts/:id', authenticate, upcomingContractController.deleteUpcomingContract);

@@ -20,6 +20,7 @@ db.TaskHistory = require('./taskHistory')(sequelize, Sequelize.DataTypes);
 db.Supplier = require('./supplier')(sequelize, Sequelize.DataTypes);
 db.Customer = require('./customer')(sequelize, Sequelize.DataTypes);
 db.CustomerContract = require('./customerContract')(sequelize, Sequelize.DataTypes);
+db.CustomerInvoice = require('./customerInvoice')(sequelize, Sequelize.DataTypes);
 db.UpcomingContract = require('./upcomingContract')(sequelize, Sequelize.DataTypes);
 
 // Setup associations

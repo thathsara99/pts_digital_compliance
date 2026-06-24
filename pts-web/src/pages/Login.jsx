@@ -23,6 +23,8 @@ import { setAuthToken } from '../utils/auth';
 const { Title, Text, Link } = Typography;
 const { Content } = Layout;
 
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+
 const LoginPage = ({ onLoginSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -31,12 +33,8 @@ const LoginPage = ({ onLoginSuccess }) => {
   const onFinish = async (values) => {
   setLoading(true);
 
-  // Debug: Log the environment variable
-  console.log('API Base URL:', process.env.REACT_APP_API_BASE);
-  console.log('All environment variables:', process.env);
-
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_BASE}/login`, {
+    const response = await fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

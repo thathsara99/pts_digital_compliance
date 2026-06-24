@@ -22,11 +22,16 @@ const CustomerManagement = () => {
   const [visible, setVisible] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [existingContractDrawerVisible, setExistingContractDrawerVisible] = useState(false);
+  const [existingInvoiceDrawerVisible, setExistingInvoiceDrawerVisible] = useState(false);
   const [upcomingContractDrawerVisible, setUpcomingContractDrawerVisible] = useState(false);
   const [existingContractCustomerId, setExistingContractCustomerId] = useState(null);
+  const [existingInvoiceCustomerId, setExistingInvoiceCustomerId] = useState(null);
   const [existingContractDocuments, setExistingContractDocuments] = useState([]);
+  const [existingInvoiceDocuments, setExistingInvoiceDocuments] = useState([]);
   const [existingContractUploads, setExistingContractUploads] = useState([]);
+  const [existingInvoiceUploads, setExistingInvoiceUploads] = useState([]);
   const [existingContractLoading, setExistingContractLoading] = useState(false);
+  const [existingInvoiceLoading, setExistingInvoiceLoading] = useState(false);
   const [upcomingContractDocuments, setUpcomingContractDocuments] = useState([]);
   const [upcomingContractUploads, setUpcomingContractUploads] = useState([]);
   const [upcomingCustomFileName, setUpcomingCustomFileName] = useState('');
@@ -134,6 +139,26 @@ const CustomerManagement = () => {
     }
   };
 
+  const fetchExistingInvoices = async (customerId) => {
+    if (!customerId) {
+      setExistingInvoiceDocuments([]);
+      return;
+    }
+    setExistingInvoiceLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/customers/${customerId}/invoices`, {
+        headers: { ...getAuthHeaders() }
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Failed to fetch invoices');
+      setExistingInvoiceDocuments(result.data || []);
+    } catch (error) {
+      message.error(error.message);
+    } finally {
+      setExistingInvoiceLoading(false);
+    }
+  };
+
   const fetchUpcomingContracts = async () => {
     setUpcomingContractLoading(true);
     try {
@@ -163,6 +188,19 @@ const CustomerManagement = () => {
     setExistingContractCustomerId(null);
   };
 
+  const openExistingInvoiceDrawer = () => {
+    setExistingInvoiceDrawerVisible(true);
+    setExistingInvoiceUploads([]);
+    setExistingInvoiceDocuments([]);
+  };
+
+  const closeExistingInvoiceDrawer = () => {
+    setExistingInvoiceDrawerVisible(false);
+    setExistingInvoiceUploads([]);
+    setExistingInvoiceDocuments([]);
+    setExistingInvoiceCustomerId(null);
+  };
+
   const openUpcomingContractDrawer = () => {
     setUpcomingContractDrawerVisible(true);
     setUpcomingContractUploads([]);
@@ -186,6 +224,10 @@ const CustomerManagement = () => {
 
   const handleExistingContractUploadListChange = ({ fileList }) => {
     setExistingContractUploads(fileList);
+  };
+
+  const handleExistingInvoiceUploadListChange = ({ fileList }) => {
+    setExistingInvoiceUploads(fileList);
   };
 
   const handleUpcomingContractUploadListChange = ({ fileList }) => {
@@ -283,6 +325,45 @@ const CustomerManagement = () => {
     }
   };
 
+  const uploadExistingInvoices = async () => {
+    if (!existingInvoiceCustomerId) {
+      message.warning('Please select a customer');
+      return;
+    }
+    const files = existingInvoiceUploads.map((entry) => entry.originFileObj).filter(Boolean);
+    if (!files.length) {
+      message.warning('Please select at least one invoice document');
+      return;
+    }
+    if (files.some((file) => file.size / 1024 / 1024 > 10)) {
+      message.error('Each document must be smaller than 10MB');
+      return;
+    }
+
+    try {
+      const documents = await Promise.all(
+        files.map(async (file) => {
+          const fileData = await readFileAsDataUrl(file);
+          return { fileName: file.name, fileData };
+        })
+      );
+
+      const res = await fetch(`${API_BASE}/customers/${existingInvoiceCustomerId}/invoices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ documents })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Failed to upload invoices');
+
+      message.success('Invoice documents uploaded');
+      setExistingInvoiceUploads([]);
+      fetchExistingInvoices(existingInvoiceCustomerId);
+    } catch (error) {
+      message.error(error.message);
+    }
+  };
+
   const uploadUpcomingContracts = async () => {
     const files = upcomingContractUploads.map((entry) => entry.originFileObj).filter(Boolean);
     if (!files.length) {
@@ -337,6 +418,25 @@ const CustomerManagement = () => {
       if (!res.ok) throw new Error(result.message || 'Failed to delete contract');
       message.success('Contract deleted');
       fetchExistingContracts(existingContractCustomerId);
+    } catch (error) {
+      message.error(error.message);
+    }
+  };
+
+  const deleteExistingInvoice = async (record) => {
+    if (!existingInvoiceCustomerId) {
+      message.warning('Please select a customer');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/customers/${existingInvoiceCustomerId}/invoices/${record.id}`, {
+        method: 'DELETE',
+        headers: { ...getAuthHeaders() }
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Failed to delete invoice');
+      message.success('Invoice deleted');
+      fetchExistingInvoices(existingInvoiceCustomerId);
     } catch (error) {
       message.error(error.message);
     }
@@ -461,6 +561,9 @@ const CustomerManagement = () => {
         <Space style={{ marginBottom: 16 }}>
           <Button icon={<FileAddOutlined />} onClick={openExistingContractDrawer}>
             Existing Customer Contracts
+          </Button>
+          <Button icon={<FileAddOutlined />} onClick={openExistingInvoiceDrawer}>
+            Existing Customer Invoices
           </Button>
           <Button icon={<FileAddOutlined />} onClick={openUpcomingContractDrawer}>
             Upcoming Contracts
@@ -598,6 +701,89 @@ const CustomerManagement = () => {
                     <Popconfirm
                       title="Delete this contract document?"
                       onConfirm={() => deleteExistingContract(record)}
+                    >
+                      <Button type="link" danger>Delete</Button>
+                    </Popconfirm>
+                  )
+                }
+              ]}
+            />
+          </Drawer>
+
+          <Drawer
+            title="Manage Existing Customer Invoices"
+            open={existingInvoiceDrawerVisible}
+            onClose={closeExistingInvoiceDrawer}
+            width={620}
+            footer={(
+              <div style={{ textAlign: 'right' }}>
+                <Button type="primary" onClick={uploadExistingInvoices}>
+                  Upload Selected Documents
+                </Button>
+              </div>
+            )}
+          >
+            <Typography.Title level={5}>Select Customer</Typography.Title>
+            <Select
+              placeholder="Select customer"
+              style={{ width: '100%', marginBottom: 16 }}
+              value={existingInvoiceCustomerId}
+              onChange={(value) => {
+                setExistingInvoiceCustomerId(value);
+                fetchExistingInvoices(value);
+              }}
+              options={customers.map((customer) => ({
+                label: customer.customerName,
+                value: customer.id
+              }))}
+            />
+            <Typography.Title level={5}>Upload Customer Invoice Documents</Typography.Title>
+            <Upload
+              beforeUpload={() => false}
+              multiple
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              fileList={existingInvoiceUploads}
+              onChange={handleExistingInvoiceUploadListChange}
+            >
+              <Button icon={<InboxOutlined />}>Select PDF/Word files</Button>
+            </Upload>
+
+            <Typography.Title level={5} style={{ marginTop: 24 }}>Uploaded Customer Invoices</Typography.Title>
+            <Table
+              rowKey="id"
+              loading={existingInvoiceLoading}
+              dataSource={existingInvoiceDocuments}
+              pagination={{
+                pageSize: 5,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '20'],
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`
+              }}
+              columns={[
+                {
+                  title: 'File Name',
+                  dataIndex: 'fileName',
+                  sorter: (a, b) => (a.fileName || '').localeCompare(b.fileName || ''),
+                  defaultSortOrder: 'ascend'
+                },
+                {
+                  title: 'Uploaded On',
+                  dataIndex: 'createdAt',
+                  sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+                  render: (value) => (value ? new Date(value).toLocaleString() : '—')
+                },
+                {
+                  title: 'View',
+                  render: (_, record) => (
+                    <Button type="link" onClick={() => openContractPreview(record)}>Open</Button>
+                  )
+                },
+                {
+                  title: 'Delete',
+                  render: (_, record) => (
+                    <Popconfirm
+                      title="Delete this invoice document?"
+                      onConfirm={() => deleteExistingInvoice(record)}
                     >
                       <Button type="link" danger>Delete</Button>
                     </Popconfirm>
